@@ -2,13 +2,13 @@
 
 namespace WDK;
 
-use WDK\includes\Log;
-use WDK\includes\Widget;
+use WDK\Library\Utility;
+use WDK\Library\Widget;
 
 /**
  * Class Widgets - Extends Wordpress' WP_Widget class so that we can inject config variables
  */
-class WP_Widget extends \WP_Widget
+class Widgets extends \WP_Widget
 {
     public static $config = null;
     public function __construct() {
@@ -16,7 +16,7 @@ class WP_Widget extends \WP_Widget
             $class = (new \ReflectionClass(static::class))->getShortName();
             self::$config = null;
 
-            if($config = Widget::getWidgetConfig($class)) {
+            if($config = Widget::get_Config($class)) {
                 self::$config = $config;
                 parent::__construct(
                     self::$config['id'], // Base ID
@@ -25,7 +25,9 @@ class WP_Widget extends \WP_Widget
                 );
             }
         } catch (\ReflectionException $e) {
-            Log::Write('Widget Reflection Class failed.');
+            Utility::Log('Widget Reflection Class failed.');
+        } catch (\JsonException $e) {
+            Utility::Log('json decode failed.');
         }
     }
 }

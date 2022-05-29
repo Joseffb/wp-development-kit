@@ -1,11 +1,11 @@
 {
-  "name": "Joseffb/wp-developer-kit",
+  "name": "joseffb/wpdeveloperkit",
   "description": "A development library to make creating things in wordpress a lot easier.",
   "minimum-stability": "stable",
   "license": "gpl",
   "autoload": {
     "psr-4": {
-      "WDK\\": "/library"
+      "WDK\\": "/"
     }
   },
   "authors": [

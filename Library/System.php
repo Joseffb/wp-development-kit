@@ -1,8 +1,9 @@
 <?php
 
-namespace WDK;
+namespace WDK\Library;
 
-use Timber\Timber;
+use DirectoryIterator;
+use JsonException;
 
 /**
  * Class Install
@@ -10,7 +11,8 @@ use Timber\Timber;
 class System
 {
     /**
-     * Called from a theme's functions file to start the MLA Kit framework.
+     * Called from a theme's functions file to start the framework.
+     * @throws JsonException
      */
     public static function Start($locations = []): void
     {
@@ -21,10 +23,10 @@ class System
         //looks for twig files in the following locations.
         Template::Setup(array_merge($locations, [
                 get_stylesheet_directory(), //for child templates
-                get_stylesheet_directory() . "/wdk", //for child templates
+                get_stylesheet_directory() . "/wdk/Views", //for child templates
                 get_template_directory(),
-                get_template_directory() . "/wdk",
-                __DIR__ . '/views']
+                get_template_directory() . "/wdk/Views",
+                __DIR__ . '/Views']
         ));
     }
 
@@ -47,17 +49,19 @@ class System
      * @param null $dir
      *
      * @return bool|int|null
+     * @throws JsonException
      */
-    public static function Setup($dir = null)
+    public static function Setup($dir = null): bool|int|null
     {
-        $config_files = get_stylesheet_directory() . '/app/Config';
+        //$config_files = get_stylesheet_directory() . '/app/Config';
+        $config_files = WDK_CONFIG_BASE;
         if (self::is_dir_empty($config_files)) {
             $config_files = get_template_directory();
         }
-        $dir = new \DirectoryIterator($dir ?: $config_files);
+        $dir = new DirectoryIterator($dir ?: $config_files);
         foreach ($dir as $fileinfo) {
-            if (!$fileinfo->isDot() && substr($fileinfo->getFilename(), -5) === '.json') {
-                $config_file = json_decode(file_get_contents($fileinfo->getRealPath()), true);
+            if (!$fileinfo->isDot() && str_ends_with($fileinfo->getFilename(), '.json')) {
+                $config_file = json_decode(file_get_contents($fileinfo->getRealPath()), true, 512, JSON_THROW_ON_ERROR);
 
                 if (!empty($config_file)) {
                     //Log::Write($fileinfo->getFilename());
@@ -98,7 +102,7 @@ class System
     /**
      * @param $config_file
      *
-     * @return null
+     * @return void
      */
     public static function process_Post_Types($config_file): void
     {
@@ -112,7 +116,7 @@ class System
     /**
      * @param $config_array
      *
-     * @return null
+     * @return void
      */
     public static function process_Taxonomies($config_array): void
     {
@@ -147,7 +151,7 @@ class System
         foreach ($config_file as $config) {
             if (!empty($config)) {
                 $buttons = !empty($config['tinyMCE_buttons']) ? $config['tinyMCE_buttons'] : false;
-                Shortcode::create_Shortcode($config['tag'], $config['callback']['ns'], $config['callback']['method'], $buttons);
+                Shortcode::CreateCustomShortcode($config['tag'], $config['callback']['ns'], $config['callback']['method'], $buttons);
             }
         }
     }
@@ -155,13 +159,13 @@ class System
     /**
      * @param $config_file
      */
-    public static function processSidebars($config_file)
+    public static function process_Sidebars($config_file): void
     {
         foreach ($config_file as $config) {
             if (!empty($config)) {
-                Sidebar::create_Sidebar($config['config']);
+                Sidebar::CreateCustomSidebar($config['config']);
                 if (!empty($config['defaults'])) {
-                    Sidebar::set_Sidebar_Defaults($config['config']['id'], $config['defaults']);
+                    Sidebar::SetCustomSidebarDefaults($config['config']['id'], $config['defaults']);
                 }
             }
         }
@@ -170,11 +174,11 @@ class System
     /**
      * @param $config_file
      */
-    public static function process_Menus($config_file)
+    public static function process_Menus($config_file): void
     {
         foreach ($config_file as $config) {
             if (!empty($config)) {
-                Menu::create_Menu($config);
+                Menu::CreateCustomMenu($config);
             }
         }
     }
@@ -182,12 +186,12 @@ class System
     /**
      * @param $config_file
      */
-    public static function processWidgets($config_file)
+    public static function process_Widgets($config_file): void
     {
         //Log::WriteLog('Inside Widget installer');
         foreach ($config_file as $config) {
             if (!empty($config)) {
-                Widget::create_Widget($config['callback']);
+                Widget::CreateCustomWidget($config['callback']);
             }
         }
     }
@@ -195,7 +199,7 @@ class System
     /**
      * @param $config_file
      *
-     * @return null
+     * @return void
      */
     public static function process_Fields($config_file): void
     {
@@ -206,12 +210,9 @@ class System
             }
             if (!empty($field['post_types'])) {
                 foreach ($field['post_types'] as $pt) {
-                    if (empty($field['post_types'])) {
-                        $post_ty = 'post';
-                    } else {
-                        $post_ty = str_replace(" ", "_", $pt);
-                    }
-                    Field::Add_Custom_Field_To_Post(
+                  $post_ty = str_replace(" ", "_", $pt);
+
+                    Field::AddCustomFieldToPost(
                         $post_ty,
                         $field['id'],
                         $field['label'],
@@ -220,19 +221,17 @@ class System
                         $field
                     );
                     if (!empty($field['admin_column_header'])) {
-                        Field::Add_Field_To_Post_Admin_Columns($field, $pt);
+                        Field::AddFieldToPostAdminColumns($field, $pt);
                     }
                 }
             }
         }
 
-        return null;
     }
 
     /**
-     * @param $config_file
-     *
-     * @return null
+     * @param $page_config_file
+     * @return void
      */
     public static function process_Posts($page_config_file): void
     {
@@ -243,7 +242,7 @@ class System
                 $post_content = !empty($config['post_content']) ? $config['post_content'] : [];
                 $post_meta = !empty($config['post_meta']) ? $config['post_meta'] : [];
                 add_action('init', function () use ($post_type, $post_title, $post_content, $post_meta) {
-                    Post::create_Post($post_type, $post_title, $post_content, $post_meta);
+                    Post::CreatePost($post_type, $post_title, $post_content, $post_meta);
                 }, 10000);
 
             }

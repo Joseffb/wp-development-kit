@@ -1,5 +1,5 @@
 <?php
-namespace WDK;
+namespace WDK\Library;
 use JsonException;
 
 /**
@@ -12,8 +12,9 @@ class Widget {
      * @return mixed|null
      * @throws JsonException
      */
-    public static function get_Config($class) {
-        $file = get_template_directory()."/app/Config/Widgets.json";
+    public static function get_Config($class): mixed
+    {
+        $file = get_template_directory()."/app/Config/Widget.json";
         if(file_exists($file)) {
             $configs = json_decode(file_get_contents($file), true, 512, JSON_THROW_ON_ERROR);
             foreach($configs as $config) {
@@ -29,7 +30,7 @@ class Widget {
      * Installs the widget referred to in config file. You also need to have it exists or this will error
      * @param $config
      */
-    public static function create_Widget($config): void
+    public static function CreateCustomWidget($config): void
     {
         //Log::Write($config);
         $ns = $config['ns']."\\".$config['class'];
@@ -40,7 +41,7 @@ class Widget {
                 register_widget($ns);
             });
         } else {
-            Log::Write('Error: Namespaced Widget class '.$ns.' not found. Widget not loaded.');
+            Utility::Log('Error: Namespaced Widget class '.$ns.' not found. Widget not loaded.');
         }
     }
 
