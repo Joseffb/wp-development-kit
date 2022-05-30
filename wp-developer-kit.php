@@ -1,5 +1,15 @@
 <?php
-
+/*
+Plugin Name: WP-Developer-Kit
+Plugin URI: https://github.com/josefb/wp-developer-kit
+Description: Installs the WP Developer Kit for use by other applictions
+Author: Joseff Betancourt
+Author URI: https://joseffb.com/
+Version: 0.1
+Text Domain: wdk
+License: LGPL3 or later
+License URI: https://www.gnu.org/licenses/lgpl-3.0.html
+*/
 use WDK\Library\System;
 
 const WDK_VERSION = '1.0.0';
