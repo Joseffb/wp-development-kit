@@ -2,7 +2,7 @@
 /*
 Plugin Name: WP-Developer-Kit
 Plugin URI: https://github.com/josefb/wp-developer-kit
-Description: Installs the WP Developer Kit for use by other applictions
+Description: Installs the WP Developer Kit for use by other applications
 Author: Joseff Betancourt
 Author URI: https://joseffb.com/
 Version: 0.1
