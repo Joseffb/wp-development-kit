@@ -12,7 +12,7 @@ License URI: https://www.gnu.org/licenses/lgpl-3.0.html
 */
 use WDK\Library\System;
 
-const WDK_VERSION = '1.0.0';
+const WDK_VERSION = '0.0.1';
 const WDK_PLUGIN = __FILE__;
 
 if (!defined(WDK_TEMPLATE_LOCATIONS_BASE)) {
