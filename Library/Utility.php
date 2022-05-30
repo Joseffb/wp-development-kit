@@ -283,5 +283,15 @@ class Utility
         return array_values($temp_array);
     }
 
+    public static function Enqueuer( $handle, $relpath, $type='script', $my_deps=array(), $in_footer ): void
+    {
+        $uri = get_theme_file_uri($relpath);
+        $vsn = filemtime(get_theme_file_path($relpath));
 
+        if($type == 'script') {
+            wp_enqueue_script($handle, $uri, $my_deps, $vsn, $in_footer);
+        } else if($type == 'style') {
+            wp_enqueue_style($handle, $uri, $my_deps, $vsn, $in_footer);
+        }
+    }
 }
