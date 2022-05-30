@@ -4,6 +4,7 @@ namespace wdk\Library;
 /**
  * CiviCRM class allows your application tp pass customer data back and forth from a centralized CiviCRM install.
  */
+
 use Exception;
 
 class CiviCRM
@@ -26,27 +27,62 @@ class CiviCRM
         $api_key = null
     )
     {
-        $path = $path ?: '/wp-content/plugins/civicrm/civicrm/extern/rest.php';
-        self::$server = $server ?: get_option('civi_server');
-        self::$path = $path ?: get_option('civi_path');
-        self::$site_key = $site_key ?: get_option('civi_site_key');
-        self::$api_key = $api_key ?: get_option('civi_api_key');
+        if (!$server) {
+            if (defined("CIVI_SERVER")) {
+                $server = CIVI_SERVER;
+            } else if (!defined("CIVI_SERVER") && $server = get_option('CIVI_SERVER')) {
+                define("CIVI_SERVER", $server);
+            }
+        }
+        self::$server = $server;
+
+        if (!$path) {
+            if (defined("CIVI_PATH")) {
+                $path = CIVI_PATH;
+            } else if (!defined("CIVI_PATH") && $path = get_option('CIVI_PATH')) {
+                define("CIVI_PATH", $path);
+            } else {
+                //Defaults to the WordPress CiviCRM default location
+                $path = '/wp-content/plugins/civicrm/civicrm/extern/rest.php';
+            }
+        }
+        self::$path = $path;
+
+        if (!$site_key) {
+            if (defined("CIVI_SITE_KEY")) {
+                $site_key = CIVI_SITE_KEY;
+            } else if (!defined("CIVI_SITE_KEY") && $site_key = get_option('CIVI_SITE_KEY')) {
+                define("CIVI_SITE_KEY", $site_key);
+            }
+        }
+        self::$site_key = $site_key;
+
+        if (!$api_key) {
+            if (defined("CIVI_API_KEY")) {
+                $api_key = CIVI_API_KEY;
+            } else if (!defined("CIVI_API_KEY") && $api_key = get_option('CIVI_API_KEY')) {
+                define("CIVI_API_KEY", $api_key);
+            }
+        }
+        self::$api_key = $api_key;
+
         self::$entity = $entity ?: self::$entity; //use new entity or the existing entity -- i.e. re-instance
         if (!self::$entity) {
             throw new \RuntimeException('Entity not provided to CiviAPI factory.');
         }
 
-        if (self::check_connection(self::$server . self::$path )) {
+        if (self::check_connection(self::$server . self::$path)) {
             $msg = 'The server ' . self::$server . self::$path . ' is not available';
             throw new \RuntimeException($msg);
         }
     }
 
-    public static function check_connection($url): bool
+    public
+    static function check_connection($url): bool
     {
         $timeout = ini_get('default_socket_timeout');
         ini_set('default_socket_timeout', 3); // wait 3 seconds for a response.
-        stream_context_set_default( [
+        stream_context_set_default([
             'ssl' => [
                 'verify_peer' => false,
                 'verify_peer_name' => false,
@@ -62,7 +98,8 @@ class CiviCRM
     /**
      * @throws Exception
      */
-    public static function instance($entity = null): CiviCRM
+    public
+    static function instance($entity = null): CiviCRM
     {
         if (self::$instance === null) {
             self::$instance = new self($entity);
@@ -77,7 +114,8 @@ class CiviCRM
      * @return array|\WP_Error
      * @throws Exception
      */
-    public static function run(array $params = [], string $method = 'get'): \WP_Error|array
+    public
+    static function run(array $params = [], string $method = 'get'): \WP_Error|array
     {
         /*
          * http://www.example.com/sites/all/modules/civicrm/extern/rest.php?api_key=t0ps3cr3t
@@ -118,7 +156,8 @@ class CiviCRM
     /**
      * @throws Exception
      */
-    public function action($action, $parameters): \WP_Error|array
+    public
+    function action($action, $parameters): \WP_Error|array
     {
         switch ($action) {
             case 'create':
@@ -142,7 +181,8 @@ class CiviCRM
     /**
      * @throws Exception
      */
-    public function create($parameters): \WP_Error|array
+    public
+    function create($parameters): \WP_Error|array
     {
         return $this->action('create', $parameters);
     }
@@ -150,7 +190,8 @@ class CiviCRM
     /**
      * @throws Exception
      */
-    public function get($parameters): \WP_Error|array
+    public
+    function get($parameters): \WP_Error|array
     {
         return $this->action('get', $parameters);
     }
@@ -158,7 +199,8 @@ class CiviCRM
     /**
      * @throws Exception
      */
-    public function update($parameters): \WP_Error|array
+    public
+    function update($parameters): \WP_Error|array
     {
         return $this->action('update', $parameters);
     }
@@ -166,12 +208,14 @@ class CiviCRM
     /**
      * @throws Exception
      */
-    public function delete($parameters): \WP_Error|array
+    public
+    function delete($parameters): \WP_Error|array
     {
         return $this->action('delete', $parameters);
     }
 
-    public function JSONSendPost($url, $data, $headers = []): bool|string
+    public
+    function JSONSendPost($url, $data, $headers = []): bool|string
     {
         $curl = curl_init($url . "?" . http_build_query($data));
         curl_setopt($curl, CURLOPT_URL, $url . "?" . http_build_query($data));
@@ -186,8 +230,8 @@ class CiviCRM
 
         //for debug only!
         //https://github.com/kalessil/phpinspectionsea/blob/master/docs/security.md#ssl-server-spoofin
-        curl_setopt($curl, CURLOPT_SSL_VERIFYHOST, WP_DEBUG?0:2);
-        curl_setopt($curl, CURLOPT_SSL_VERIFYPEER, WP_DEBUG?0:1);
+        curl_setopt($curl, CURLOPT_SSL_VERIFYHOST, WP_DEBUG ? 0 : 2);
+        curl_setopt($curl, CURLOPT_SSL_VERIFYPEER, WP_DEBUG ? 0 : 1);
         curl_setopt($curl, CURLINFO_HEADER_OUT, true);
         $information = curl_getinfo($curl);
         // end debug
@@ -201,7 +245,7 @@ class CiviCRM
     /**
      * @throws Exception
      */
-    //Contact functions use CiviCRM API endpoints
+//Contact functions use CiviCRM API endpoints
     public static function CreateContact($parameters): array|\WP_Error|bool
     {
         $parameters['contact_type'] = !empty($parameters['contact_type']) ? $parameters['contact_type'] : 'individual';
