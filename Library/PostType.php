@@ -36,8 +36,6 @@ class PostType
                 ucwords($name),
         );
 
-//        Log::Write($args['labels']);
-
         return add_action('init', function () use ($post_type_name, $args, $name) {
             $post_type_name = Inflector::singularize($post_type_name);
             register_post_type($post_type_name, $args);
@@ -56,15 +54,14 @@ class PostType
                             'show_as_admin_filter'=>true
                         ]);
                     }
-                    create_relationship($post_type_name, $machine_tax_name);
+                    Shadow::CreateRelationship($post_type_name, $machine_tax_name);
                 }
 
             }
         });
-        //Log::Write($cpt);
     }
 
-    public static function getNextNumberedShadowTaxName($taxName): string
+    public static function GetNextNumberedShadowTaxName($taxName): string
     {
         //32 char limit on tax names so we just take 23 characers to allow us to add '_99_tax' at end.
         $array = explode("_", $taxName);
@@ -72,10 +69,10 @@ class PostType
             array_pop($array);
         }
         $lastNumber = (int)last($array);
-        if (is_numeric($lastNumber) && $lastNumber > 0) {
+        if ($lastNumber > 0) {
             array_pop($array);
         }
-        $machine_tax_name = substr(strtolower(implode("_", $array)), 0, 23);
+        $machine_tax_name = strtolower(substr(implode("_", $array), 0, 23));
         $machine_tax_name = $lastNumber ? $machine_tax_name . "_" . $lastNumber . "_tax" : $machine_tax_name . "_1_tax";
         if (taxonomy_exists($machine_tax_name)) {
 

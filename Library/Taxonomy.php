@@ -22,7 +22,7 @@ class Taxonomy
      * @return void
      * @since 1.0
      */
-    public static function CreateCustomTaxonomy($tax_name, $post_types = array("post"), $labels = array(), $options = array())
+    public static function CreateCustomTaxonomy($tax_name, $post_types = array("post"), $labels = array(), $options = array()): void
     {
 
         // Clean up post types
@@ -79,14 +79,14 @@ class Taxonomy
             'graphql_plural_name' => Inflector::pluralize($tax_machine_name),
             'rewrite' => array(
                 'slug' => $tax_slug,
+                'slug' => $tax_slug,
                 'with_front' => false,
             )
         ), $options);
 
-        if (!Check::IsTrue($options['hierarchical'])) {
+        if (!Utility::IsTrue($options['hierarchical'])) {
             array_shift($options);
         }
-//        Log::Write($tax_machine_name);
 
         add_action('init', function () use ($tax_name_plural, $tax_machine_name, $post_types, $options) {
             if (!taxonomy_exists($tax_machine_name)) {
@@ -96,11 +96,9 @@ class Taxonomy
                     register_taxonomy_for_object_type($tax_machine_name, $pt);
                 }
             }
-//            Log::Write($tax_machine_name);
 
             if (!empty($options['show_as_admin_filter']) && !!$options['show_as_admin_filter']) {
                 foreach ($post_types as $type) {
-//                    Log::Write($tax_machine_name);
                     if (empty(self::$cpt_types[$tax_name_plural . "-Menu"])) {
                         add_action('restrict_manage_posts', function () use ($type, $tax_name_plural, $tax_machine_name) {
                             self::AddToAdminMenu($type, $tax_name_plural, $tax_machine_name);
@@ -144,7 +142,7 @@ class Taxonomy
      * @since 1.0
      */
     public
-    static function drop_down_category_meta_box_callback($post, $box)
+    static function DropDownCategoryMetaBoxCallback($post, $box): void
     {
 
         $defaults = array('taxonomy' => 'category');
@@ -163,7 +161,7 @@ class Taxonomy
 
         <div id="taxonomy-<?php echo $taxonomy; ?>" class="categorydiv">
             <?php
-            $name = ($taxonomy == 'category') ? 'post_category' : 'tax_input[' . $taxonomy . ']';
+            $name = ($taxonomy === 'category') ? 'post_category' : 'tax_input[' . $taxonomy . ']';
             echo "<input type='hidden' name='{$name}[]' value='0' />"; // Allows for an empty term set to be sent. 0 is an invalid Term ID and will be ignored by empty() checks.
 
             $term_obj = wp_get_object_terms($post->ID, $taxonomy); //_log($term_obj[0]->term_id)
@@ -227,24 +225,24 @@ class Taxonomy
                 }
             }
             return true;
-        } else {
-            $_term = strtolower($taxonomy . "_taxonomy_defaults_installed_" . str_replace(" ", "_", $term));
-            $term_check = (bool)get_option($_term);
+        }
 
-            if (empty($term_check)) {
-                return add_action('init', function () use ($term, $taxonomy, $parent_term, $_term) {
-                    if (empty(term_exists($term, $taxonomy))) { //double checks if the term already exists.
-                        $parent = !empty(term_exists($parent_term, $taxonomy)) ? [term_exists($parent_term, $taxonomy)['term_id']] : [0];
-                        $res = wp_insert_term(
-                            $term,
-                            $taxonomy,
-                            $parent
-                        );
-                    }
-                    update_option($_term, true);
+        $_term = strtolower($taxonomy . "_taxonomy_defaults_installed_" . str_replace(" ", "_", $term));
+        $term_check = (bool)get_option($_term);
 
-                }, 9999);
-            }
+        if (empty($term_check)) {
+            return add_action('init', function () use ($term, $taxonomy, $parent_term, $_term) {
+                if (empty(term_exists($term, $taxonomy))) { //double checks if the term already exists.
+                    $parent = !empty(term_exists($parent_term, $taxonomy)) ? [term_exists($parent_term, $taxonomy)['term_id']] : [0];
+                    $res = wp_insert_term(
+                        $term,
+                        $taxonomy,
+                        $parent
+                    );
+                }
+                update_option($_term, true);
+
+            }, 9999);
         }
         return false;
     }
@@ -258,7 +256,7 @@ class Taxonomy
      * @since 1.0
      */
     public
-    static function AddToAdminMenu($type, $tax_name, $tax_machine_name)
+    static function AddToAdminMenu($type, $tax_name, $tax_machine_name): void
     {
 //            Log::Write($tax_machine_name);
         if (isset($_GET['post_type'])) {
@@ -268,7 +266,7 @@ class Taxonomy
         }
 
 //only add filter to post type you want
-        if ($type == $pt) {
+        if ($type === $pt) {
             //change this to the list of values you want to show
             //in 'label' => 'value' format
             $terms = get_terms(array(
@@ -310,7 +308,7 @@ class Taxonomy
      * @since 1.0
      */
     public
-    static function QueryAdminMenuFilters($query, $type, $tax_machine_name)
+    static function QueryAdminMenuFilters($query, $type, $tax_machine_name): void
     {
         global $pagenow;
         if (isset($_GET['post_type'])) {
@@ -319,8 +317,7 @@ class Taxonomy
             $pt = 'post';
         }
         $hookName = strtoupper($tax_machine_name) . "_FIELD_VALUE";
-        if ($type == $pt && is_admin() && $pagenow == 'edit.php' && isset($_GET[$hookName]) && $_GET[$hookName] != '') {
-            //error_log(print_r($query, true));
+        if ($_GET[$hookName] !== '' && isset($_GET[$hookName]) && $pagenow === 'edit.php' && $type === $pt && is_admin()) {
             $query->query_vars['tax_query'] = array(
                 array(
                     'taxonomy' => $tax_machine_name,
@@ -340,7 +337,7 @@ class Taxonomy
      * @since 1.0.5
      */
     public
-    static function save_term_image($term_id)
+    static function SaveTermImage($term_id): void
     {
         global $wpdb;
         $post_field_name = 'taxonomy-image-id';
@@ -358,7 +355,7 @@ class Taxonomy
      */
 
     public
-    static function add_term_image($tax_name = 'category')
+    static function AddTermImage($tax_name = 'category'): void
     {
         $post_field_name = 'taxonomy-image-id';
         ?>
@@ -378,7 +375,7 @@ class Taxonomy
             </p>
         </div>
         <?php
-        Media::add_media_manager_inline_script();
+        Utility::AddMediaManagerInlineScript();
     }
 
 
@@ -390,7 +387,7 @@ class Taxonomy
      * @since 1.0.5
      */
     public
-    static function update_term_image_form($term)
+    static function UpdateTermImageForm($term): void
     {
 
         $post_field_name = 'taxonomy-image-id';
@@ -419,7 +416,7 @@ class Taxonomy
             </td>
         </tr>
         <?php
-        Media::add_media_manager_inline_script();
+        Utility::AddMediaManagerInlineScript();
     }
 
     /**
@@ -430,7 +427,7 @@ class Taxonomy
      * @since 1.0.5
      */
     public
-    static function process_term_image_update($term_id)
+    static function ProcessTermImageUpdate($term_id): void
     {
         global $wpdb;
         $term = get_term_by("term_id", $term_id);
@@ -448,7 +445,7 @@ class Taxonomy
      * @return mixed
      */
     public
-    static function Process_Term_Custom_Images($terms): array
+    static function ProcessTermCustomImages($terms): array
     {
         $children = get_term_children($terms->term_id, $terms->taxonomy);
         $children = $children ?: [$terms->term_id];
