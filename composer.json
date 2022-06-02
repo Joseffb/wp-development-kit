@@ -3,6 +3,7 @@
   "description": "A development library to make creating things in wordpress a lot easier.",
   "minimum-stability": "stable",
   "license": "MIT",
+  "version": "1.0.0",
   "keywords": [
     "Timber","Twig","CiviCRM","GraphQL","WP-GraphQL","Shadow Taxonomy","Site Builder", "Automation"],
   "autoload": {
@@ -22,14 +23,14 @@
     "wp-graphql/wp-graphql": "dev-master",
     "wp-graphql/wp-graphiql": "dev-master"
   },
+  "require-dev": {
+    "phpunit/phpunit": "9.*",
+    "roave/security-advisories": "dev-latest"
+  },
   "repositories":[
     {
       "type":"composer",
       "url":"https://wpackagist.org"
     }
-  ],
-  "require-dev": {
-    "phpunit/phpunit": "9.*",
-    "roave/security-advisories": "dev-latest"
-  }
+  ]
 }
