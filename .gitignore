@@ -1,0 +1,85 @@
+# Include your project-specific ignores in this file
+# Read about how to use .gitignore: https://help.github.com/articles/ignoring-files
+.cache-loader
+.htaccess
+
+#no log files
+.log
+debug.log
+#local config
+resources/assets/config-local.json
+
+# Composer
+vendor/
+vendor/*
+composer.phar
+
+# NPM
+node_modules/
+node_modules/*
+
+# IntelliJ - PhpStorm and PyCharm
+.idea/
+.idea/*
+*.ipr
+*.iws
+
+# Eclipse
+/.project
+/.settings
+/.classpath
+
+# Logs
+logs/
+logs/*
+.log
+.logs
+
+# Netbeans
+nbproject
+.nbproject
+.nbproject/
+.nbproject/*
+nbproject/
+nbproject/*
+nbbuild/
+nbbuild/*
+nbdist/
+nbdist/*
+nbactions.xml
+nb-configuration.xml
+
+# Mac OSX
+.DS_Store
+.github/
+.github/*
+
+# Thumbnails
+._*
+# Files that might appear on external disk
+.Spotlight-V100
+.Trashes
+
+# SublimeText project files
+/*.sublime-project
+*.sublime-workspace
+
+# Dart
+packages/
+packages/*
+
+# Vagrant
+.vagrant/
+.vagrant/*
+
+.env
+
+# OpenZeppelin SDK
+.openzeppelin/dev-*.json
+.openzeppelin/.session
+/db/style_db_*.sql
+/.wp-env.json
+/files/.htaccess
+/composer.lock
+
+*.lock
