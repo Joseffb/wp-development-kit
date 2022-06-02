@@ -2,7 +2,7 @@
   "name": "joseffb/wp-developer-kit",
   "description": "A development library to make creating things in wordpress a lot easier.",
   "minimum-stability": "stable",
-  "license": "LGPL-3.0-or-later",
+  "license": "MIT",
   "keywords": [
     "Timber","Twig","CiviCRM","GraphQL","WP-GraphQL","Shadow Taxonomy","Site Builder", "Automation"],
   "autoload": {
@@ -18,7 +18,9 @@
   ],
   "require": {
     "ext-json": "*",
-    "timber/timber": "1.15.2"
+    "timber/timber": "dev-master",
+    "wp-graphql/wp-graphql": "dev-master",
+    "wp-graphql/wp-graphiql": "dev-master"
   },
   "repositories":[
     {
@@ -27,7 +29,7 @@
     }
   ],
   "require-dev": {
-    "phpunit/phpunit": "5.7.16|6.*",
+    "phpunit/phpunit": "9.*",
     "roave/security-advisories": "dev-latest"
   }
 }

@@ -1,0 +1,41 @@
+{
+  "phpVersion": "8.1",
+  "env": {
+    "development": {
+      "config": {
+        "WP_DEBUG_DISPLAY": false,
+        "WP_DEBUG": true,
+        "WP_DEBUG_LOG": "/var/www/html/wp-content/themes/example/debug.log",
+        "SCRIPT_DEBUG": true,
+        "WP_PHP_BINARY": "php",
+        "WP_SITEURL": "http://example.test",
+        "WP_HOME": "http://example.test",
+        "WPCF7_UPLOADS_TMP_DIR": "/var/www/html/wp-content/themes/example/files",
+        "CIVI_SERVER": "",
+        "CIVI_PATH": "",
+        "CIVI_API_KEY": "",
+        "CIVI_SITE_KEY": ""
+      },
+      "mappings": {
+        "wp-content/plugins": "../../plugins",
+        "wp-content/mu-plugins": "../../mu-plugins",
+        "wp-content/uploads": "../../uploads"
+      },
+      "themes": [
+        "../example-child",
+        "../example"
+      ],
+
+      "port": 3092
+    },
+    "tests": {"config": {
+      "WPCF7_UPLOADS_TMP_DIR": "/var/www/html/wp-content/themes/example/tests/files"
+    },
+      "themes": [
+        "../example-child",
+        "../example"
+      ],
+      "port": 3095
+    }
+  }
+}
