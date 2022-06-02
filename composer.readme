@@ -1,0 +1,16 @@
+Change the following paths to refer to your environment. Given Git version is for a wpenv docker install.
+
+Setup a wordpress path if you want to install wp with your composer install.
+       add to require: "johnpbloch/wordpress": "4.3.*"
+       add to extras: "wordpress-install-dir": "public/wp"
+
+Sets up a path for composer to install mu-plugins, plugins, and or theme.
+      "public/wp-content/mu-plugins/{$name}/": [
+        "type:wordpress-muplugin"
+      ],
+      "public/wp-content/plugins/{$name}/": [
+        "type:wordpress-plugin"
+      ],
+      "public/wp-content/themes/{$name}/": [
+        "type:wordpress-theme"
+      ]

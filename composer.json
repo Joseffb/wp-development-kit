@@ -32,7 +32,6 @@
     "wp-graphql/wp-graphql": "dev-master"
   },
   "require-dev": {
-    "phpunit/phpunit": "9.*",
     "roave/security-advisories": "dev-latest"
   },
   "repositories": [
@@ -40,8 +39,7 @@
       "type": "composer",
       "url": "https://wpackagist.org"
     }
-  ],
-  "extra": {
+  ], "extra": {
     "installer-paths": {
       "../../mu-plugins/{$name}/": [
         "type:wordpress-muplugin"
