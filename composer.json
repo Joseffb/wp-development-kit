@@ -5,7 +5,15 @@
   "license": "MIT",
   "version": "1.0.0",
   "keywords": [
-    "Timber","Twig","CiviCRM","GraphQL","WP-GraphQL","Shadow Taxonomy","Site Builder", "Automation"],
+    "Timber",
+    "Twig",
+    "CiviCRM",
+    "GraphQL",
+    "WP-GraphQL",
+    "Shadow Taxonomy",
+    "Site Builder",
+    "Automation"
+  ],
   "autoload": {
     "psr-4": {
       "WDK\\": "/"
@@ -18,19 +26,32 @@
     }
   ],
   "require": {
+    "composer/installers": "~1.0",
     "ext-json": "*",
     "timber/timber": "dev-master",
-    "wp-graphql/wp-graphql": "dev-master",
-    "wp-graphql/wp-graphiql": "dev-master"
+    "wp-graphql/wp-graphql": "dev-master"
   },
   "require-dev": {
     "phpunit/phpunit": "9.*",
     "roave/security-advisories": "dev-latest"
   },
-  "repositories":[
+  "repositories": [
     {
-      "type":"composer",
-      "url":"https://wpackagist.org"
+      "type": "composer",
+      "url": "https://wpackagist.org"
     }
-  ]
+  ],
+  "extra": {
+    "installer-paths": {
+      "../../mu-plugins/{$name}/": [
+        "type:wordpress-muplugin"
+      ],
+      "../../plugins/{$name}/": [
+        "type:wordpress-plugin"
+      ],
+      "../../themes/{$name}/": [
+        "type:wordpress-theme"
+      ]
+    }
+  }
 }
