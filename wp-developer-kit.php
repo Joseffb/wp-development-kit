@@ -1,8 +1,8 @@
 <?php
 /*
-Plugin Name: WP-Developer-Kit
-Plugin URI: https://github.com/josefb/wp-developer-kit
-Description: Installs the WP Developer Kit for use by other applications
+Plugin Name: WP-Development-Kit
+Plugin URI: https://github.com/Joseffb/wp-development-kit
+Description: Installs the WP Development Kit. Passive library used by other plugins and themes
 Author: Joseff Betancourt
 Author URI: https://joseffb.com/
 Version: 0.1
