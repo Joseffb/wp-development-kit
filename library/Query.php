@@ -1,9 +1,7 @@
 <?php
 
-namespace WDK\Library;
-
+namespace WDK;
 use Timber\PostQuery;
-use WP_Query;
 
 /**
  * Class Query
@@ -32,9 +30,9 @@ class Query
      * @param array|null $fields
      * @param array $args
      * @param bool $debug
-     * @return bool|WP_Query
+     * @return bool|Query
      */
-    public static function GetPost(array $taxonomies = null, array $fields = null, array $args = [], bool $debug = false): WP_Query|bool
+    public static function GetPost(array $taxonomies = null, array $fields = null, array $args = [], bool $debug = false): bool
     {
         wp_reset_query();
         $paged = self::IsPaged();
@@ -95,13 +93,13 @@ class Query
         return self::query_WP($args, $debug);
     }
 
-    private static function query_WP($query, $debug = false): WP_Query
+    private static function query_WP($query, $debug = false): Query
     {
         if (!empty($query['like_query'])) {
             add_filter('posts_where', ['wdk\Library\Query', "title_filter"], 10, 2);
         }
 
-        $results = new WP_Query($query);
+        $results = new Query($query);
 
         if ($debug) {
             Utility::LastSQL_WP();
@@ -115,7 +113,7 @@ class Query
 
     /**
      * @param $where
-     * @param $wp_query
+     * @param $Query
      * @return mixed|string
      * @expects    'like_query' => [
      * 'relation' => 'OR',
@@ -132,10 +130,10 @@ class Query
      * ],
      * ]
      */
-    public static function title_filter($where, $wp_query): mixed
+    public static function title_filter($where, $Query): mixed
     {
         global $wpdb;
-        $search_terms = $wp_query->get('like_query');
+        $search_terms = $Query->get('like_query');
 
         if (is_array($search_terms)) {
             $operator = !empty($search_terms['relation']) ? $search_terms['relation'] : 'OR';
@@ -187,7 +185,7 @@ class Query
         return $where;
     }
 
-    public static function shadow_taxonomy_posts($posts, WP_Query $query)
+    public static function shadow_taxonomy_posts($posts, Query $query)
     {
         $args = $query->query;
         global $template_engine;
@@ -231,7 +229,7 @@ class Query
      *
      * @return array|bool, if failure and ID of category on success.
      */
-    public static function get_tax_from_term_name(string $term_name): bool|array
+    public static function get_tax_from_term_name(string $term_name)
     {
         return self::get_taxonomy_from_a_term('name', $term_name, 'name');
     }
@@ -241,7 +239,7 @@ class Query
      *
      * @return array|bool
      */
-    public static function get_tax_from_term_id($term_id): bool|array
+    public static function get_tax_from_term_id($term_id)
     {
         return self::get_taxonomy_from_a_term('id', $term_id, 'name');
     }
@@ -253,7 +251,7 @@ class Query
      *
      * @return array|bool
      */
-    public static function get_taxonomy_from_a_term(string $term_field = "slug", $term_value = null, string $return_field = 'all'): bool|array
+    public static function get_taxonomy_from_a_term(string $term_field = "slug", $term_value = null, string $return_field = 'all')
     {
         if (!$term_value) {
             Utility::Log('SOFT ERROR: query::get_taxonomy_from_a_term has no term_value provided');
@@ -284,7 +282,7 @@ class Query
      *
      * @return mixed
      */
-    public static function GetTaxQueriesForQuery(array $tax): mixed
+    public static function GetTaxQueriesForQuery(array $tax)
     {
         /**
          * Tax Examples
@@ -339,7 +337,7 @@ class Query
      *
      * @return array
      */
-    public static function GetMetaQueriesForQuery(array $fields): array
+    public static function GetMetaQueriesForQuery(array $fields)
     {
         //https://wordpress.stackexchange.com/questions/70864/meta-query-compare-operator-explanation
         /**
@@ -433,7 +431,7 @@ class Query
      *
      * @return array|bool
      */
-    public static function GetPostAttachments(array $post_ids): bool|array
+    public static function GetPostAttachments(array $post_ids)
     {
         global $wpdb;
         $post_ids_for_sql = implode(',', $post_ids);
@@ -448,7 +446,7 @@ class Query
             return false;
         }
         $post_in = $wpdb->get_col($sql);
-        $att = Query::GetPost([], [], [
+        $att = self::GetPost([], [], [
             'posts_per_page' => -1,
             'post_mime_type' => 'image',
             'post_status' => 'all',
@@ -458,7 +456,7 @@ class Query
         ]);
 
         $retVal = [];
-        if (!empty($att->posts)) {
+        if (is_array($att->posts)) {
             $c = 0;
             foreach ($att->posts as $post) {
                 $m = get_attached_media('', $post);
@@ -474,7 +472,7 @@ class Query
         return false;
     }
 
-    public static function get_post_id_by_slug($slug, $post_type = "any", $status = 'publish'): bool|string|null
+    public static function get_post_id_by_slug($slug, $post_type = "any", $status = 'publish')
     {
         global $wpdb;
 
@@ -495,7 +493,7 @@ class Query
         return false;
     }
 
-    public static function get_post_id_by_title($title, $post_type = "any", $status = 'publish'): bool|string|null
+    public static function get_post_id_by_title($title, $post_type = "any", $status = 'publish')
     {
         global $wpdb;
 
@@ -523,10 +521,10 @@ class Query
      * @param int $related_count
      *
      * @param array $args
-     * @return bool | WP_Query
+     * @return bool | Query
      */
     public
-    static function GetRelatedPost($post_ids = null, int $related_count = 15, array $args = []): WP_Query|bool
+    static function GetRelatedPost($post_ids = null, int $related_count = 15, array $args = [])
     {
         $post_ids = is_array($post_ids) ? $post_ids : [$post_ids];
 
@@ -616,9 +614,9 @@ class Query
 
     }
 
-    public static function MergeResults(array $arrays): WP_Query
+    public static function MergeResults(array $arrays)
     {
-        $result = new WP_Query();
+        $result = new self();
         $result->posts = array_merge(...$arrays);
         $result->post_count = count($result->posts);
         return $result;

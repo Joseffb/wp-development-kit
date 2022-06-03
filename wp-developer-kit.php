@@ -7,32 +7,34 @@ Author: Joseff Betancourt
 Author URI: https://joseffb.com/
 Version: 0.1
 Text Domain: wdk
-License: LGPL3 or later
-License URI: https://www.gnu.org/licenses/lgpl-3.0.html
+License: MIT
 */
-use WDK\Library\System;
+$autoloader = plugin_dir_path(__FILE__) . 'vendor/autoload.php';
+require($autoloader);
+
+use WDK\System;
 
 const WDK_VERSION = '0.0.1';
 const WDK_PLUGIN = __FILE__;
 
-if (!defined(WDK_TEMPLATE_LOCATIONS_BASE)) {
+if (!defined('WDK_TEMPLATE_LOCATIONS_BASE')) {
     if ($config_base = get_option('WDK_TEMPLATE_LOCATIONS_BASE')) {
         define("WDK_TEMPLATE_LOCATIONS_BASE", $config_base);
-    } else if(is_dir(get_stylesheet_directory() . '/wdk/Views')) {
+    } else if(is_dir(get_stylesheet_directory() . '/wdk/views')) {
         // template override locations
-        define("WDK_TEMPLATE_LOCATIONS_BASE",[get_stylesheet_directory() . '/wdk/Views']);
+        define("WDK_TEMPLATE_LOCATIONS_BASE",[get_stylesheet_directory() . '/wdk/views']);
     } else {
         define("WDK_TEMPLATE_LOCATIONS_BASE", []);
     }
 }
 $locations = WDK_TEMPLATE_LOCATIONS_BASE;
 
-if (!defined(WDK_CONFIG_BASE)) {
+if (!defined('WDK_CONFIG_BASE')) {
     if ($config_base = get_option('WDK_CONFIG_BASE')) {
         define("WDK_CONFIG_BASE", $config_base);
-    } else if(directoryExists(get_stylesheet_directory() . '/wdk/Config')) {
+    } else if(is_dir(get_stylesheet_directory() . '/wdk/config')) {
         // WP theme based config location
-        define("WDK_CONFIG_BASE",get_stylesheet_directory() . '/wdk/Config');
+        define("WDK_CONFIG_BASE", get_stylesheet_directory() . '/wdk/config');
     } else {
         define("WDK_CONFIG_BASE", __DIR__ . "/configs");
     }

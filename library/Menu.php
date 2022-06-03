@@ -1,7 +1,6 @@
 <?php
 
-namespace WDK\Library;
-/**
+namespace WDK;/**
  * Class Menu - Help tools for Menu creation, placement and management.
  */
 class Menu

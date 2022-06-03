@@ -1,5 +1,6 @@
 <?php
-namespace WDK\Library;
+namespace WDK;
+
 use JsonException;
 
 /**
@@ -12,7 +13,7 @@ class Widget {
      * @return mixed|null
      * @throws JsonException
      */
-    public static function get_Config($class): mixed
+    public static function get_Config($class)
     {
         $file = get_template_directory()."/app/Config/Widget.json";
         if(file_exists($file)) {

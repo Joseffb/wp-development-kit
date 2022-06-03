@@ -1,6 +1,6 @@
 <?php
 
-namespace WDK\library;
+namespace WDK;
 /**
  * Class Shortcode
  */

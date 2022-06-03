@@ -1,6 +1,6 @@
 <?php
 
-namespace WDK\Library;
+namespace WDK;
 /**
  * Class Field - Field input generator and tools
  * @package WDK\Library\Field

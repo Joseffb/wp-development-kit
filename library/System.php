@@ -1,6 +1,6 @@
 <?php
 
-namespace WDK\Library;
+namespace WDK;
 
 use DirectoryIterator;
 use JsonException;
@@ -23,10 +23,10 @@ class System
         //looks for twig files in the following locations.
         Template::Setup(array_merge($locations, [
                 get_stylesheet_directory(), //for child templates
-                get_stylesheet_directory() . "/wdk/Views", //for child templates
+                get_stylesheet_directory() . "/wdk/views", //for child templates
                 get_template_directory(),
-                get_template_directory() . "/wdk/Views",
-                __DIR__ . '/Views']
+                get_template_directory() . "/wdk/views",
+                __DIR__ . '/views']
         ));
     }
 
@@ -51,7 +51,7 @@ class System
      * @return bool|int|null
      * @throws JsonException
      */
-    public static function Setup($dir = null): bool|int|null
+    public static function Setup($dir = null)
     {
         //$config_files = get_stylesheet_directory() . '/app/Config';
         $config_files = WDK_CONFIG_BASE;

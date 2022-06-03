@@ -23,8 +23,7 @@
  * @package       Cake.Utility
  * @link          http://book.cakephp.org/2.0/en/core-utility-libraries/inflector.html
  */
-namespace WDK\Library;
-
+namespace WDK;
 class Inflector {
 
 	/**

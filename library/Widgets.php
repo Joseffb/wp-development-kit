@@ -2,8 +2,8 @@
 
 namespace WDK;
 
-use WDK\Library\Utility;
-use WDK\Library\Widget;
+use WDK\Utility;
+use WDK\Widget;
 
 /**
  * Class Widgets - Extends Wordpress' WP_Widget class so that we can inject config variables

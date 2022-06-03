@@ -1,7 +1,6 @@
 <?php
 
-namespace WDK\library;
-
+namespace WDK;
 class PostType
 {
 

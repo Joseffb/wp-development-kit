@@ -1,6 +1,6 @@
 <?php
 
-namespace wdk\Library;
+namespace WDK;
 /**
  * CiviCRM class allows your application tp pass customer data back and forth from a centralized CiviCRM install.
  */

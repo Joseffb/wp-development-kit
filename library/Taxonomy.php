@@ -1,6 +1,7 @@
 <?php
 
-namespace WDK\Library;
+namespace WDK;
+
 
 use Timber\Term;
 use Timber\Timber;

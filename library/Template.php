@@ -1,6 +1,6 @@
 <?php
 
-namespace WDK\Library;
+namespace WDK;
 
 use Timber\Helper;
 use Timber\Post;
@@ -9,8 +9,9 @@ use Twig\TwigFunction;
 
 class Template
 {
-    private static string $ext = ".twig";
-    private static array $templates = array(
+    private static $ext = ".twig";
+
+    private static $templates = array(
     'is_embed' => 'embed',
     'is_attachment' => 'attachment',
     'is_404' => '404',
@@ -34,7 +35,7 @@ class Template
      * @param string $engine
      * @return mixed
      */
-    public static function get_template(): mixed
+    public static function get_template()
     {
         global $post;
         if (preg_match('~(\.css|\.js|\.map|\.png|\.jpg/\.gif\.doc\.xls\.ico)~', $_SERVER['REQUEST_URI'])) {
@@ -83,7 +84,7 @@ class Template
         if (class_exists(Timber::class)) {
             //add global context values for Timber
             add_filter('timber/context', static function () {
-                $start = Helper::start_timer();
+                //$start = Helper::start_timer();
                 $context = Timber::context();
                 $templates = self::get_template();
                 $context['page-template'] = $templates;
@@ -107,10 +108,8 @@ class Template
             });
 
             // Replaces the default wordpress templates. We still need an empty index.php file in theme root.
-            add_filter('template_include', function ($template) {
+            add_filter('template_include', function () {
                 $context = Timber::context();
-                //Timber::$dirname = get_template_directory();
-                //todo check if this ^ is needed as the locations prop should handle it.
                 Timber::render($context['page-template'], $context);
             }, 99);
             //adds the sidebar function to the twig templates

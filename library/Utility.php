@@ -1,6 +1,7 @@
 <?php
 
-namespace WDK\Library;
+namespace WDK;
+
 use JsonException;
 
 /**
@@ -71,7 +72,7 @@ class Utility
      * @param bool | int $levels
      * @param int $deprecated_levels
      */
-    public static function Log($log, string $note = "", bool|int $levels = 0, int $deprecated_levels = 100): void
+    public static function Log($log, string $note = "", $levels = 0, int $deprecated_levels = 100): void
     {
         $default_message = empty($note) ? "BACKTRACE>>> " : false;
         if (empty($default_message)) {
@@ -213,7 +214,7 @@ class Utility
      * Print last query -- note add define( 'SAVEQUERIES', true ) to wp-config
      * @param bool|string $msg
      */
-    public static function LastSQL_WP(bool|string $msg = ''): void
+    public static function LastSQL_WP($msg = ''): void
     {
         if (!defined('SAVEQUERIES')) {
             add_action('init', function () {

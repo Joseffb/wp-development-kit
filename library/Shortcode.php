@@ -1,6 +1,7 @@
 <?php
 
-namespace WDK\Library;
+namespace WDK;
+
 /**
  * Class Shortcode
  */
@@ -13,7 +14,7 @@ class Shortcode {
 	 * @param $method
 	 * @param bool|array $buttons
 	 */
-	public static function CreateCustomShortcode($tag, $namespace, $method, bool|array $buttons = [] ): void
+	public static function CreateCustomShortcode($tag, $namespace, $method, $buttons = [] ): void
     {
 		add_action( 'init', function () use ( $tag, $namespace, $method, $buttons ) {
 

@@ -1,7 +1,7 @@
 <?php
 // Based off of https://github.com/humanmade/shadow-taxonomy/blob/cli_add_meta_query_params/includes/shadow-taxonomy.php
 
-namespace WDK\Library;
+namespace WDK;
 use Closure;
 
 /**
@@ -196,7 +196,7 @@ class Shadow {
      *
      * @return bool|object Returns false if no post is found, or the Post Object if one is found.
      */
-    public static function GetRelatedPostBySlug(object $term, string $post_type): object|bool
+    public static function GetRelatedPostBySlug(object $term, string $post_type)
     {
         $post = new \WP_Query([
             'post_type' => $post_type,
@@ -220,7 +220,7 @@ class Shadow {
      *
      * @return bool | int return the post_id or false if no associated post is found.
      */
-    public static function GetAssociatedPostID(object $term): bool|int
+    public static function GetAssociatedPostID(object $term)
     {
         return get_term_meta($term->term_id, 'shadow_post_id', true);
     }
@@ -232,7 +232,7 @@ class Shadow {
      *
      * @return bool|object Returns the associated post object or false if no post is found.
      */
-    public static function GetAssociatedPost(object $term): object|bool
+    public static function GetAssociatedPost(object $term)
     {
         return get_associated_single_post($term);
     }
@@ -244,7 +244,7 @@ class Shadow {
      *
      * @return bool|object Returns the associated post object or false if no post is found.
      */
-    public static function GetAssociatedSinglePost(object $term): object|bool
+    public static function GetAssociatedSinglePost(object $term)
     {
         if (empty($term)) {
             return false;
@@ -259,7 +259,11 @@ class Shadow {
         return get_post($post_id);
     }
 
-    public static function GetAssociatedMultiplePosts(object $term): array|bool
+    /**
+     * @param object $term
+     * @return false|int[]|\WP_Post[]
+     */
+    public static function GetAssociatedMultiplePosts(object $term)
     {
 
         if (empty($term)) {
@@ -286,8 +290,7 @@ class Shadow {
      *
      * @return bool | int returns the term_id or false if no associated term was found.
      */
-    public static function GetAssociatedTermID(object $post): bool|int
-    {
+    public static function GetAssociatedTermID(object $post) {
         return get_post_meta($post->ID, 'shadow_term_id', true);
     }
 
@@ -299,7 +302,7 @@ class Shadow {
      *
      * @return bool|object Returns the associated term object or false if no term is found.
      */
-    public static function GetAssociatedTerm(object|int $post, string $taxonomy): object|bool
+    public static function GetAssociatedTerm($post, string $taxonomy)
     {
 
         if (is_int($post)) {
@@ -325,7 +328,7 @@ class Shadow {
      *
      * @return array|bool Returns false or an are of post Objects if any are found.
      */
-    public static function GetThePosts(int $post_id, string $taxonomy, string $cpt): bool|array
+    public static function GetThePosts(int $post_id, string $taxonomy, string $cpt)
     {
         $terms = get_the_terms($post_id, $taxonomy);
 
