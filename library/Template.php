@@ -108,6 +108,8 @@ class Template
             });
 
             // Replaces the default wordpress templates. We still need an empty index.php file in theme root.
+            // Todo: Add conditional for plugin mode. Currently replaces all Wordpress template routes (theme mode).
+            // Todo: Add some routing options here to use WP template as default and Twig for specific pages/post
             add_filter('template_include', function () {
                 $context = Timber::context();
                 Timber::render($context['page-template'], $context);
@@ -115,13 +117,11 @@ class Template
             //adds the sidebar function to the twig templates
             add_filter('timber/twig', function ($twig) {
                 $twig->addFunction(new TwigFunction('sidebar', ['\Timber\Timber', 'get_widgets']));
-                $twig->addFunction(new TwigFunction('isPaged', ['\WDK\Library\Query', 'IsPaged']));
-                $twig->addFunction(new TwigFunction('writeToLog', ['\WDK\Library\Log', 'Write']));
-                $twig->addFunction(new TwigFunction('get_term_image', ['\WDK\Library\Taxonomy', 'Process_Term_Custom_Images']));
-
+                $twig->addFunction(new TwigFunction('is_paged', ['\WDK\Query', 'IsPaged']));
+                $twig->addFunction(new TwigFunction('log_it', ['\WDK\Log', 'Write']));
+                $twig->addFunction(new TwigFunction('get_term_image', ['\WDK\Taxonomy', 'ProcessTermCustomImages']));
                 return $twig;
             });
-
 
         } else {
             add_action('admin_notices', function () {
