@@ -60,7 +60,7 @@ class Utility
      * is_true('');                // false
      * is_true([]);                // false
      */
-    public static function IsTrue($val, bool $return_null = false): mixed
+    public static function IsTrue($val, bool $return_null = false)
     {
             $bool_val = (is_string($val) ? filter_var($val, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE) : (bool)$val);
             return ($bool_val === null && !$return_null ? false : $bool_val);

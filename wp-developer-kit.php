@@ -48,9 +48,4 @@ define('WDK_PLUGIN_NAME',
     trim(dirname(WDK_PLUGIN_BASENAME), '/')
 );
 
-add_action('init', static function () use ($locations) {
-    /**
-     * @throws JsonException
-     */
-    System::Start($locations);
-});
+System::Start($locations);

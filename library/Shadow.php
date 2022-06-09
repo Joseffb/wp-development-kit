@@ -20,9 +20,9 @@ class Shadow {
      */
     public static function CreateRelationship(string $post_type, string $taxonomy, array $conditionals = []): void
     {
-        add_action('wp_insert_post', create_shadow_term($post_type, $taxonomy, $conditionals));
-        add_action('set_object_terms', create_shadow_term($post_type, $taxonomy, $conditionals));
-        add_action('before_delete_post', delete_shadow_term($taxonomy));
+        add_action('wp_insert_post', self::CreateShadowTerm($post_type, $taxonomy, $conditionals));
+        add_action('set_object_terms', self::CreateShadowTerm($post_type, $taxonomy, $conditionals));
+        add_action('before_delete_post', self::CreateShadowTerm($post_type, $taxonomy, $conditionals));
     }
 
     /**
@@ -49,10 +49,8 @@ class Shadow {
 
     public static function CreateShadowTerm(string $post_type, string $taxonomy, array $conditionals = []): Closure
     {
-        return function ($post_id) use ($post_type, $taxonomy, $conditionals) {
-
-            $term = get_associated_term($post_id, $taxonomy);
-
+        return static function ($post_id) use ($post_type, $taxonomy, $conditionals) {
+            $term = self::GetAssociatedTerm($post_id, $taxonomy);
             $post = get_post($post_id);
             $condition_tests = [];
 
@@ -65,9 +63,10 @@ class Shadow {
                         $condition_tests[] = true;
                     }
                 }
+
                 //Any value needs to be false;
                 if (($operator === "AND") && in_array(false, $condition_tests, true)) {
-                    if ($term = get_associated_term($post_id, $taxonomy)) {
+                    if ($term = self::GetAssociatedTerm($post_id, $taxonomy)) {
                         wp_delete_term($term->term_id, $taxonomy);
                     }
 
@@ -76,7 +75,7 @@ class Shadow {
 
                 //All values need to be false
                 if (($operator === "OR") && in_array(true, $condition_tests, true) === false) {
-                    if ($term = get_associated_term($post_id, $taxonomy)) {
+                    if ($term = self::GetAssociatedTerm($post_id, $taxonomy)) {
                         wp_delete_term($term->term_id, $taxonomy);
                     }
                     return false;
@@ -94,15 +93,15 @@ class Shadow {
             }
 
             if (!$term) {
-                create_shadow_taxonomy_term($post_id, $post, $taxonomy);
+                self::CreateShadowTaxonomyTerm($post_id, $post, $taxonomy);
             } else {
-                $post = get_associated_post($term);
+                $post = self::GetAssociatedPost($term);
 
                 if (empty($post)) {
                     return false;
                 }
 
-                if (post_type_already_in_sync($term, $post)) {
+                if (self::PostTypeAlreadyInSync($term, $post)) {
                     return false;
                 }
 
@@ -130,7 +129,7 @@ class Shadow {
     public static function DeleteShadowTerm(string $taxonomy): Closure
     {
         return function ($post_id) use ($taxonomy) {
-            $term_id = get_associated_term_id(get_post($post_id));
+            $term_id = self::GetAssociatedTermID(get_post($post_id));
 
             if (!$term_id) {
                 return false;
@@ -234,7 +233,7 @@ class Shadow {
      */
     public static function GetAssociatedPost(object $term)
     {
-        return get_associated_single_post($term);
+        return self::GetAssociatedSinglePost($term);
     }
 
     /**
@@ -250,7 +249,7 @@ class Shadow {
             return false;
         }
 
-        $post_id = get_associated_post_id($term);
+        $post_id = self::GetAssociatedPostID($term);
 
         if (empty($post_id)) {
             return false;
@@ -313,7 +312,7 @@ class Shadow {
             return false;
         }
 
-        $term_id = get_associated_term_id($post);
+        $term_id = self::GetAssociatedTermID($post);
         return get_term_by('id', $term_id, $taxonomy);
     }
 
@@ -334,7 +333,7 @@ class Shadow {
 
         if (!empty($terms)) {
             return array_map(static function ($term) use ($cpt) {
-                $post = get_associated_post($term);
+                $post = self::GetAssociatedPost($term);
                 if (!empty($post)) {
                     return $post;
                 }

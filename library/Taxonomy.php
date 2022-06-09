@@ -25,13 +25,12 @@ class Taxonomy
      */
     public static function CreateCustomTaxonomy($tax_name, $post_types = array("post"), $labels = array(), $options = array()): void
     {
-
         // Clean up post types
         $p = [];
         foreach ($post_types as $_posttype) {
             $p[] = strtolower(str_replace(" ", "_", $_posttype));
         }
-//        Log::Write($tax_name);
+       //Utility::Log($tax_name);
         $post_types = $p;
         if (is_array($tax_name)) {
             $array = $tax_name;
@@ -85,20 +84,19 @@ class Taxonomy
             )
         ), $options);
 
-        if (!Utility::IsTrue($options['hierarchical'])) {
+        if (!(Utility::IsTrue($options['hierarchical']))) {
             array_shift($options);
         }
-
         add_action('init', function () use ($tax_name_plural, $tax_machine_name, $post_types, $options) {
             if (!taxonomy_exists($tax_machine_name)) {
-                register_taxonomy($tax_machine_name, $post_types, $options);
+               register_taxonomy($tax_machine_name, $post_types, $options);
             } else {
                 foreach ($post_types as $pt) {
                     register_taxonomy_for_object_type($tax_machine_name, $pt);
                 }
             }
 
-            if (!empty($options['show_as_admin_filter']) && !!$options['show_as_admin_filter']) {
+            if (!empty($options['show_as_admin_filter'])) {
                 foreach ($post_types as $type) {
                     if (empty(self::$cpt_types[$tax_name_plural . "-Menu"])) {
                         add_action('restrict_manage_posts', function () use ($type, $tax_name_plural, $tax_machine_name) {
@@ -121,7 +119,7 @@ class Taxonomy
                     add_filter("get_user_option_meta-box-order_$pt", function ($order) use ($context, $div_name, $desired_order) {
                         //Log::Write($order);
                         $meta_order = explode(",", $order[$context]);
-                        if (($key = array_search($div_name, $meta_order)) !== false) {
+                        if (($key = array_search($div_name, $meta_order, true)) !== false) {
                             unset($meta_order[$key]);
                         }
                         array_splice($meta_order, $desired_order - 1, 0, [$div_name]);
@@ -279,7 +277,7 @@ class Taxonomy
             foreach ($terms as $t) {
                 $values[$t->name] = $t->slug;
             }
-            $hookName = strtoupper($tax_machine_name) . "_FIELD_VALUE";
+            $hookName = strtolower($tax_machine_name) . "_FIELD_VALUE";
             ?>
             <select name="<?= $hookName ?>">
                 <option value=""
@@ -317,8 +315,8 @@ class Taxonomy
         } else {
             $pt = 'post';
         }
-        $hookName = strtoupper($tax_machine_name) . "_FIELD_VALUE";
-        if ($_GET[$hookName] !== '' && isset($_GET[$hookName]) && $pagenow === 'edit.php' && $type === $pt && is_admin()) {
+        $hookName = strtolower($tax_machine_name. "_FIELD_VALUE") ;
+        if (!empty($_GET[$hookName]) && $pagenow === 'edit.php' && $type === $pt && is_admin()) {
             $query->query_vars['tax_query'] = array(
                 array(
                     'taxonomy' => $tax_machine_name,

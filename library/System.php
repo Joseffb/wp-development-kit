@@ -62,32 +62,40 @@ class System
         foreach ($dir as $fileinfo) {
             if (!$fileinfo->isDot() && str_ends_with($fileinfo->getFilename(), '.json')) {
                 $config_file = json_decode(file_get_contents($fileinfo->getRealPath()), true, 512, JSON_THROW_ON_ERROR);
-
+                Utility::Log($fileinfo->getFilename());
                 if (!empty($config_file)) {
                     //Log::Write($fileinfo->getFilename());
-                    switch ($fileinfo->getFilename()) {
-                        case 'PostTypes.json':
+                    switch (strtolower($fileinfo->getFilename())) {
+                        case 'posttypes.json':
+                        case 'post_types.json':
                             self::process_Post_Types($config_file);
                             break;
-                        case 'Taxonomies.json':
+                        case 'taxonomies.json':
+                        case 'taxonomy.json':
                             self::process_Taxonomies($config_file);
                             break;
-                        case 'Shortcodes.json':
+                        case 'shortcodes.json':
+                        case 'shortcode.json':
                             self::process_Shortcodes($config_file);
                             break;
-                        case 'Sidebars.json':
+                        case 'sidebars.json':
+                        case 'sidebar.json':
                             self::process_Sidebars($config_file);
                             break;
-                        case 'Menus.json':
+                        case 'menus.json':
+                        case 'menu.json':
                             self::process_Menus($config_file);
                             break;
-                        case 'Widgets.json':
+                        case 'widgets.json':
+                        case 'widget.json':
                             self::process_Widgets($config_file);
                             break;
-                        case 'Fields.json':
+                        case 'fields.json':
+                        case 'field.json':
                             self::process_Fields($config_file);
                             break;
-                        case 'Pages.json':
+                        case 'pages.json':
+                        case 'page.json':
                             self::process_Posts($config_file);
                             break;
                     }
