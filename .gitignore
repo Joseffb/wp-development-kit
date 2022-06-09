@@ -3,16 +3,12 @@
 .cache-loader
 .htaccess
 
-#no log files
-.log
-debug.log
-#local config
-resources/assets/config-local.json
-
 # Composer
 vendor/
 vendor/*
 composer.phar
+/composer.lock
+*.lock
 
 # NPM
 node_modules/
@@ -32,8 +28,9 @@ node_modules/*
 # Logs
 logs/
 logs/*
-.log
-.logs
+*.logs
+*.log
+debug.log
 
 # Netbeans
 nbproject
@@ -72,14 +69,14 @@ packages/*
 .vagrant/
 .vagrant/*
 
-.env
-
 # OpenZeppelin SDK
 .openzeppelin/dev-*.json
 .openzeppelin/.session
-/db/style_db_*.sql
-/.wp-env.json
-/files/.htaccess
-/composer.lock
 
-*.lock
+# JSON files in configs folder
+configs/
+configs/*
+
+# Wordpress Env config file
+.wp-env.json
+*.env

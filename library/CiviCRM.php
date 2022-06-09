@@ -77,8 +77,12 @@ class CiviCRM
         }
     }
 
+    /**
+     * @param $url
+     * @return bool
+     */
     public
-    static function check_connection($url): bool
+    static function check_connection($url)
     {
         $timeout = ini_get('default_socket_timeout');
         ini_set('default_socket_timeout', 3); // wait 3 seconds for a response.
@@ -115,7 +119,7 @@ class CiviCRM
      * @throws Exception
      */
     public
-    static function run(array $params = [], string $method = 'get'): \WP_Error|array
+    static function run(array $params = [], string $method = 'get')
     {
         /*
          * http://www.example.com/sites/all/modules/civicrm/extern/rest.php?api_key=t0ps3cr3t
@@ -157,7 +161,7 @@ class CiviCRM
      * @throws Exception
      */
     public
-    function action($action, $parameters): \WP_Error|array
+    function action($action, $parameters)
     {
         switch ($action) {
             case 'create':
@@ -182,7 +186,7 @@ class CiviCRM
      * @throws Exception
      */
     public
-    function create($parameters): \WP_Error|array
+    function create($parameters)
     {
         return $this->action('create', $parameters);
     }
@@ -191,7 +195,7 @@ class CiviCRM
      * @throws Exception
      */
     public
-    function get($parameters): \WP_Error|array
+    function get($parameters)
     {
         return $this->action('get', $parameters);
     }
@@ -200,7 +204,7 @@ class CiviCRM
      * @throws Exception
      */
     public
-    function update($parameters): \WP_Error|array
+    function update($parameters)
     {
         return $this->action('update', $parameters);
     }
@@ -209,13 +213,13 @@ class CiviCRM
      * @throws Exception
      */
     public
-    function delete($parameters): \WP_Error|array
+    function delete($parameters)
     {
         return $this->action('delete', $parameters);
     }
 
     public
-    function JSONSendPost($url, $data, $headers = []): bool|string
+    function JSONSendPost($url, $data, $headers = [])
     {
         $curl = curl_init($url . "?" . http_build_query($data));
         curl_setopt($curl, CURLOPT_URL, $url . "?" . http_build_query($data));
@@ -245,8 +249,8 @@ class CiviCRM
     /**
      * @throws Exception
      */
-//Contact functions use CiviCRM API endpoints
-    public static function CreateContact($parameters): array|\WP_Error|bool
+    //Contact functions use CiviCRM API endpoints
+    public static function CreateContact($parameters)
     {
         $parameters['contact_type'] = !empty($parameters['contact_type']) ? $parameters['contact_type'] : 'individual';
         try {
