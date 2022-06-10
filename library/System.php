@@ -26,7 +26,7 @@ class System
                 get_stylesheet_directory() . "/wdk/views", //for child templates
                 get_template_directory(),
                 get_template_directory() . "/wdk/views",
-                __DIR__ . '/views']
+                dirname(__DIR__) . '/views']
         ));
     }
 

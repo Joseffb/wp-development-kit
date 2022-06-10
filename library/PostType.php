@@ -35,14 +35,9 @@ class PostType
                 ucwords($args['labels']['menu_name']) :
                 ucwords($name),
         );
-//        Utility::Log($post_type_name);
-//        Utility::Log($args);
-//        Utility::Log($name);
         add_action('init', function () use ($post_type_name, $args, $name) {
-            Utility::Log('there');
             $post_type_name = Inflector::singularize($post_type_name);
             $p = register_post_type($post_type_name, $args);
-            Utility::Log($p);
             if (!empty($args['related_cpt']) && is_array($args['related_cpt'])) {
                 foreach ($args['related_cpt'] as $k) {
                     $machine_tax_name = strtolower(substr(str_replace(" ", "_", $k . "_" . $post_type_name), 0, 28)) . "_tax";

@@ -38,7 +38,7 @@ class Template
     public static function get_template()
     {
         global $post;
-        if (preg_match('~(\.css|\.js|\.map|\.png|\.jpg/\.gif\.doc\.xls\.ico)~', $_SERVER['REQUEST_URI'])) {
+        if (preg_match('~(\.css|\.js|\.map|\.pdf|\.png|\.jpg/\.gif\.doc\.xls\.ico)~', $_SERVER['REQUEST_URI'])) {
             return false;
         }
 
@@ -118,7 +118,7 @@ class Template
             add_filter('timber/twig', function ($twig) {
                 $twig->addFunction(new TwigFunction('sidebar', ['\Timber\Timber', 'get_widgets']));
                 $twig->addFunction(new TwigFunction('is_paged', ['\WDK\Query', 'IsPaged']));
-                $twig->addFunction(new TwigFunction('log_it', ['\WDK\Log', 'Write']));
+                $twig->addFunction(new TwigFunction('log_it', ['\WDK\Utility', 'Log']));
                 $twig->addFunction(new TwigFunction('get_term_image', ['\WDK\Taxonomy', 'ProcessTermCustomImages']));
                 return $twig;
             });
