@@ -84,6 +84,11 @@ class Taxonomy
             )
         ), $options);
 
+        if(!empty($options['use_twig'])) {
+            delete_option("process_template_tax_$tax_machine_name"); //removes old data entries.
+            update_option("process_template_tax_$tax_machine_name", true);
+        }
+
         if (!(Utility::IsTrue($options['hierarchical']))) {
             array_shift($options);
         }

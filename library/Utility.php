@@ -295,4 +295,16 @@ class Utility
             wp_enqueue_style($handle, $uri, $my_deps, $vsn, $in_footer);
         }
     }
+    /**
+     * @param $dir
+     * @return bool|null
+     */
+    public static function IsDirEmpty($dir): ?bool
+    {
+        if (!is_readable($dir)) {
+            return NULL;
+        }
+        // if we see . and .. it's an empty directory.
+        return (count(scandir($dir)) === 2);
+    }
 }

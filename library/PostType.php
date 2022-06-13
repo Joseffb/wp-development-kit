@@ -38,6 +38,11 @@ class PostType
         add_action('init', function () use ($post_type_name, $args, $name) {
             $post_type_name = Inflector::singularize($post_type_name);
             $p = register_post_type($post_type_name, $args);
+
+            if(!empty($args['use_twig'])) {
+                delete_option("process_template_cpt_$post_type_name"); //removes old data entries.
+                update_option("process_template_cpt_$post_type_name", true);
+            }
             if (!empty($args['related_cpt']) && is_array($args['related_cpt'])) {
                 foreach ($args['related_cpt'] as $k) {
                     $machine_tax_name = strtolower(substr(str_replace(" ", "_", $k . "_" . $post_type_name), 0, 28)) . "_tax";

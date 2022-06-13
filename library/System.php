@@ -12,36 +12,30 @@ class System
 {
     /**
      * Called from a theme's functions file to start the framework.
-     * @throws JsonException
+     *
      */
-    public static function Start($locations = []): void
+    public static function Start($locations = []): bool
     {
         //Setup json based configuration
-        self::Setup();
-
-        //Setup Twig template system
-        //looks for twig files in the following locations.
-        Template::Setup(array_merge($locations, [
-                get_stylesheet_directory(), //for child templates
-                get_stylesheet_directory() . "/wdk/views", //for child templates
-                get_template_directory(),
-                get_template_directory() . "/wdk/views",
-                dirname(__DIR__) . '/views']
-        ));
-    }
-
-    /**
-     * @param $dir
-     * @return bool|null
-     */
-    public static function is_dir_empty($dir): ?bool
-    {
-        if (!is_readable($dir)) {
-            return NULL;
+        try{
+            self::Setup();
+            //Setup Twig template system
+            //looks for twig files in the following locations.
+            Template::Setup(array_merge($locations, [
+                    get_stylesheet_directory(), //for child templates
+                    get_stylesheet_directory() . "/wdk/views", //for child templates
+                    get_template_directory(),
+                    get_template_directory() . "/wdk/views",
+                    dirname(__DIR__) . '/views']
+            ));
+            return true;
+        } catch(\Exception $e) {
+           Utility::Log('JSON ERROR, Please validate config files.');
+           return false;
         }
-        // if we see . and .. it's an empty directory.
-        return (count(scandir($dir)) === 2);
     }
+
+
 
     /**
      * Install command for the customizations in the config files.
@@ -55,53 +49,50 @@ class System
     {
         //$config_files = get_stylesheet_directory() . '/app/Config';
         $config_files = WDK_CONFIG_BASE;
-        if (self::is_dir_empty($config_files)) {
+        if (Utility::IsDirEmpty($config_files)) {
             $config_files = get_template_directory();
         }
         $dir = new DirectoryIterator($dir ?: $config_files);
         foreach ($dir as $fileinfo) {
-            if (!$fileinfo->isDot() && str_ends_with($fileinfo->getFilename(), '.json')) {
+            if (!$fileinfo->isDot() && (bool)strpos($fileinfo->getFilename(), '.json')) {
                 $config_file = json_decode(file_get_contents($fileinfo->getRealPath()), true, 512, JSON_THROW_ON_ERROR);
-                Utility::Log($fileinfo->getFilename());
                 if (!empty($config_file)) {
-                    //Log::Write($fileinfo->getFilename());
                     switch (strtolower($fileinfo->getFilename())) {
                         case 'posttypes.json':
                         case 'post_types.json':
-                            self::process_Post_Types($config_file);
+                            self::ProcessPostTypes($config_file);
                             break;
                         case 'taxonomies.json':
                         case 'taxonomy.json':
-                            self::process_Taxonomies($config_file);
+                            self::ProcessTaxonomies($config_file);
                             break;
                         case 'shortcodes.json':
                         case 'shortcode.json':
-                            self::process_Shortcodes($config_file);
+                            self::ProcessShortcodes($config_file);
                             break;
                         case 'sidebars.json':
                         case 'sidebar.json':
-                            self::process_Sidebars($config_file);
+                            self::ProcessSidebars($config_file);
                             break;
                         case 'menus.json':
                         case 'menu.json':
-                            self::process_Menus($config_file);
+                            self::ProcessMenus($config_file);
                             break;
                         case 'widgets.json':
                         case 'widget.json':
-                            self::process_Widgets($config_file);
+                            self::ProcessWidgets($config_file);
                             break;
                         case 'fields.json':
                         case 'field.json':
-                            self::process_Fields($config_file);
+                            self::ProcessFields($config_file);
                             break;
                         case 'pages.json':
                         case 'page.json':
-                            self::process_Posts($config_file);
+                            self::ProcessPosts($config_file);
                             break;
                     }
                 }
             }
-
         }
 
         return null; //makes IDE happy
@@ -112,7 +103,7 @@ class System
      *
      * @return void
      */
-    public static function process_Post_Types($config_file): void
+    public static function ProcessPostTypes($config_file): void
     {
         foreach ($config_file as $config) {
             if (!empty($config)) {
@@ -126,7 +117,7 @@ class System
      *
      * @return void
      */
-    public static function process_Taxonomies($config_array): void
+    public static function ProcessTaxonomies($config_array): void
     {
         foreach ($config_array as $config) {
             if (!empty($config)) {
@@ -154,7 +145,7 @@ class System
     /**
      * @param $config_file
      */
-    public static function process_Shortcodes($config_file): void
+    public static function ProcessShortcodes($config_file): void
     {
         foreach ($config_file as $config) {
             if (!empty($config)) {
@@ -167,7 +158,7 @@ class System
     /**
      * @param $config_file
      */
-    public static function process_Sidebars($config_file): void
+    public static function ProcessSidebars($config_file): void
     {
         foreach ($config_file as $config) {
             if (!empty($config)) {
@@ -182,7 +173,7 @@ class System
     /**
      * @param $config_file
      */
-    public static function process_Menus($config_file): void
+    public static function ProcessMenus($config_file): void
     {
         foreach ($config_file as $config) {
             if (!empty($config)) {
@@ -194,7 +185,7 @@ class System
     /**
      * @param $config_file
      */
-    public static function process_Widgets($config_file): void
+    public static function ProcessWidgets($config_file): void
     {
         //Log::WriteLog('Inside Widget installer');
         foreach ($config_file as $config) {
@@ -209,7 +200,7 @@ class System
      *
      * @return void
      */
-    public static function process_Fields($config_file): void
+    public static function ProcessFields($config_file): void
     {
         foreach ($config_file as $k => $field) {
             $field = !empty($field['field']) ? $field['field'] : $field;
@@ -241,7 +232,7 @@ class System
      * @param $page_config_file
      * @return void
      */
-    public static function process_Posts($page_config_file): void
+    public static function ProcessPosts($page_config_file): void
     {
         foreach ($page_config_file as $config) {
             if (!empty($config)) {
