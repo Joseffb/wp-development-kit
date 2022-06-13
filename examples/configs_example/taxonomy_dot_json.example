@@ -1,0 +1,38 @@
+[
+  {
+    "name": "Event Day",
+    "post_types": [
+      "event"
+    ],
+    "labels": [],
+    "options": {
+      "show_in_admin_bar": "true",
+      "show_admin_column": "true",
+      "show_as_admin_filter": "true"
+    },
+    "defaults": [
+      "6/1",
+      "6/2",
+      "6/3",
+      "6/4"
+    ]
+  },{
+  "name": "Event Slot",
+  "post_types": [
+    "event"
+  ],
+  "labels": [],
+  "options": {
+    "show_in_admin_bar": "true",
+    "show_admin_column": "true",
+    "show_as_admin_filter": "true"
+  },
+  "defaults": [
+    "9am - 10am",
+    "11am - 12pm",
+    "12pm - 1pm",
+    "1pm - 2pm",
+    "2pm - 3pm"
+  ]
+}
+]

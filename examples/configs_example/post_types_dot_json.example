@@ -1,0 +1,169 @@
+[
+  {
+    "name": "Events",
+    "args": {
+      "use_twig": true,
+      "related_cpt": [],
+      "label": "Events",
+      "labels": {
+        "name": "Events",
+        "singular_name": "Event",
+        "menu_name": "Events",
+        "parent_item_colon": "Parent Events:",
+        "all_items": "All Events",
+        "view_item": "View Events",
+        "add_new_item": "Select Events:",
+        "add_new": "Add New",
+        "edit_item": "Edit Events",
+        "update_item": "Update Events",
+        "search_items": "Search Events",
+        "not_found": "Event Not Found",
+        "not_found_in_trash": "Event not found in Trash"
+      },
+      "description": "Conference Events",
+      "supports": [
+        "title",
+        "thumbnail",
+        "editor",
+        "custom-fields",
+        "comments"
+      ],
+      "hierarchical": false,
+      "public": true,
+      "show_ui": true,
+      "show_in_menu": true,
+      "show_in_nav_menus": true,
+      "show_in_admin_bar": true,
+      "menu_position": 4,
+      "can_export": true,
+      "has_archive": true,
+      "exclude_from_search": true,
+      "publicly_queryable": true
+    }
+  }, {
+    "name": "Venues",
+    "args": {
+      "related_cpt": ["event"],
+      "label": "Venue",
+      "labels": {
+        "name": "Venues",
+        "singular_name": "Venue",
+        "menu_name": "Venue",
+        "parent_item_colon": "Parent Venue:",
+        "all_items": "All Venue",
+        "view_item": "View Venue",
+        "add_new_item": "Select Venue:",
+        "add_new": "Add New",
+        "edit_item": "Edit Venue",
+        "update_item": "Update Venue",
+        "search_items": "Search Venue",
+        "not_found": "Venue Not Found",
+        "not_found_in_trash": "Venue not found in Trash"
+      },
+      "description": "Conference Venues",
+      "supports": [
+        "title",
+        "thumbnail",
+        "editor",
+        "custom-fields",
+        "comments"
+      ],
+      "hierarchical": false,
+      "public": true,
+      "show_ui": true,
+      "show_in_menu": true,
+      "show_in_nav_menus": true,
+      "show_in_admin_bar": true,
+      "menu_position": 4,
+      "can_export": true,
+      "has_archive": true,
+      "exclude_from_search": true,
+      "publicly_queryable": true
+    }
+  },
+  {
+    "name": "Presenters",
+    "args": {
+      "related_cpt": [
+        "event"
+      ],
+      "label": "Presenters",
+      "labels": {
+        "name": "Presenters",
+        "singular_name": "Presenter",
+        "menu_name": "Presenters",
+        "parent_item_colon": "Parent Presenter:",
+        "all_items": "All Presenters",
+        "view_item": "View Presenters",
+        "add_new_item": "Select Presenters:",
+        "add_new": "Add New",
+        "edit_item": "Edit Presenters",
+        "update_item": "Update Presenters",
+        "search_items": "Search Presenters",
+        "not_found": "Presenter Not Found",
+        "not_found_in_trash": "Presenter not found in Trash"
+      },
+      "description": "Nominations",
+      "supports": [
+        "title",
+        "thumbnail",
+        "editor",
+        "custom-fields",
+        "comments"
+      ],
+      "hierarchical": false,
+      "public": false,
+      "show_ui": true,
+      "show_in_menu": true,
+      "show_in_nav_menus": true,
+      "show_in_admin_bar": true,
+      "menu_position": 4,
+      "can_export": true,
+      "has_archive": true,
+      "exclude_from_search": true,
+      "publicly_queryable": false
+    }
+  },
+  {
+    "name": "Organizations",
+    "args": {
+      "related_cpt": ["presenter"],
+      "related_defaults": ["presenter"],
+      "label": "Organizations",
+      "labels": {
+        "name": "Organizations",
+        "singular_name": "Organizations",
+        "menu_name": "Organizations",
+        "parent_item_colon": "Parent Organizations:",
+        "all_items": "All Organizations",
+        "view_item": "View Organizations",
+        "add_new_item": "Select Organizations:",
+        "add_new": "Add New",
+        "edit_item": "Edit Organizations",
+        "update_item": "Update Organizations",
+        "search_items": "Search Organizations",
+        "not_found": "Not Found",
+        "not_found_in_trash": "Not found in Trash"
+      },
+      "description": "Organizations",
+      "supports": [
+        "title",
+        "thumbnail",
+        "editor",
+        "custom-fields",
+        "comments"
+      ],
+      "hierarchical": false,
+      "public": false,
+      "show_ui": true,
+      "show_in_menu": false,
+      "show_in_nav_menus": true,
+      "show_in_admin_bar": false,
+      "menu_position": 4,
+      "can_export": true,
+      "has_archive": true,
+      "exclude_from_search": true,
+      "publicly_queryable": false
+    }
+  }
+]
