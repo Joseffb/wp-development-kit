@@ -9,6 +9,9 @@ Version: 0.1
 Text Domain: wdk
 License: MIT
 */
+/**
+ * Note: this library can be installed via composer or as a standalone plugin.
+ */
 $autoloader = plugin_dir_path(__FILE__) . 'vendor/autoload.php';
 require($autoloader);
 
