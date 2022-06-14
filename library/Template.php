@@ -162,10 +162,10 @@ class Template
             }, 99);
             //adds the sidebar function to the twig templates
             add_filter('timber/twig', function ($twig) {
-                $twig->addFunction(new TwigFunction('sidebar', ['\Timber\Timber', 'get_widgets']));
-                $twig->addFunction(new TwigFunction('is_paged', ['\WDK\Query', 'IsPaged']));
+                $twig->addFunction(new TwigFunction('get_sidebar', ['\Timber\Timber', 'get_widgets']));
+                $twig->addFunction(new TwigFunction('paging', ['\WDK\Query', 'IsPaged']));
                 $twig->addFunction(new TwigFunction('log_it', ['\WDK\Utility', 'Log']));
-                $twig->addFunction(new TwigFunction('get_term_image', ['\WDK\Taxonomy', 'ProcessTermCustomImages']));
+                $twig->addFunction(new TwigFunction('get_taxonomy_term_image', ['\WDK\Taxonomy', 'ProcessTermCustomImages']));
                 return $twig;
             });
 
