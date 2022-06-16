@@ -14,26 +14,17 @@ class System
      * Called from a theme or plugin's functions file to start the framework.
      *
      */
-    public static function Start($locations = []): bool
+    public static function Start(array $locations = []): bool
     {
-
-        if (!defined('WDK_TEMPLATE_LOCATIONS_BASE')) {
-            if(!empty($locations)) {
-                define("WDK_TEMPLATE_LOCATIONS_BASE", $locations);
-            } else if ($config_base = get_option('WDK_TEMPLATE_LOCATIONS_BASE')) {
-                define("WDK_TEMPLATE_LOCATIONS_BASE", $config_base);
-            } else if(is_dir(get_stylesheet_directory() . '/wdk/views')) {
-                // template override locations
-                define("WDK_TEMPLATE_LOCATIONS_BASE",[get_stylesheet_directory() . '/wdk/views']);
-            } else {
-                define("WDK_TEMPLATE_LOCATIONS_BASE", []);
-            }
-        }
+        $file = Utility::GetCallingFile();
+        Utility::Log($file, "Calling File Path");
 
         if (!defined('WDK_CONFIG_BASE')) {
-            if ($config_base = get_option('WDK_CONFIG_BASE')) {
+            if (is_dir($file."/wdk/configs")) {
+                define("WDK_CONFIG_BASE", $file . "/wdk/configs");
+            } else if ($config_base = [get_option('WDK_CONFIG_BASE')]) {
                 define("WDK_CONFIG_BASE", $config_base);
-            } else if(is_dir(get_stylesheet_directory() . '/wdk/config')) {
+            } else if (is_dir(get_stylesheet_directory() . '/wdk/config')) {
                 // WP theme based config location
                 define("WDK_CONFIG_BASE", get_stylesheet_directory() . '/wdk/config');
             } else {
@@ -41,12 +32,36 @@ class System
             }
         }
 
+
+        if (!defined('WDK_TEMPLATE_LOCATIONS_BASE')) {
+            if (!empty($locations)) {
+                define("WDK_TEMPLATE_LOCATIONS_BASE", $locations);
+            } else if ($config_base = [get_option('WDK_TEMPLATE_LOCATIONS_BASE')]) {
+                define("WDK_TEMPLATE_LOCATIONS_BASE", $config_base);
+            } else if (is_dir(plugin_dir_path() . '/wdk/views')) {
+                // template override locations
+                define("WDK_TEMPLATE_LOCATIONS_BASE", [plugin_dir_path() . '/wdk/views']);
+            else
+                if (is_dir(get_stylesheet_directory() . '/wdk/views')) {
+                    // template override locations
+                    define("WDK_TEMPLATE_LOCATIONS_BASE", [get_stylesheet_directory() . '/wdk/views']);
+                } else if (is_dir(__DIR__ . '/views')) {
+                    // template override locations
+                    define("WDK_TEMPLATE_LOCATIONS_BASE", [__DIR__ . '/views']);
+                } else {
+                    define("WDK_TEMPLATE_LOCATIONS_BASE", []);
+                }
+            }
+        }
+
         //Setup json based configuration
-        try{
+        try {
             self::Setup();
             //Setup Twig template system
             //looks for twig files in the following locations.
             Template::Setup(array_merge(WDK_TEMPLATE_LOCATIONS_BASE, [
+                    plugin_dir_path() . "wdk/views", //for child templates
+                    get_stylesheet_directory() . "/wdk/views", //for child templates
                     get_stylesheet_directory(), //for child templates
                     get_stylesheet_directory() . "/wdk/views", //for child templates
                     get_template_directory(),
@@ -54,12 +69,11 @@ class System
                     dirname(__DIR__) . '/views']
             ));
             return true;
-        } catch(\Exception $e) {
-           Utility::Log('JSON ERROR, Please validate config files.');
-           return false;
+        } catch (\Exception $e) {
+            Utility::Log('JSON ERROR, Please validate config files.');
+            return false;
         }
     }
-
 
 
     /**
@@ -234,7 +248,7 @@ class System
             }
             if (!empty($field['post_types'])) {
                 foreach ($field['post_types'] as $pt) {
-                  $post_ty = str_replace(" ", "_", $pt);
+                    $post_ty = str_replace(" ", "_", $pt);
 
                     Field::AddCustomFieldToPost(
                         $post_ty,

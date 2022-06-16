@@ -181,6 +181,36 @@ class Utility
         </script>
     <?php }
 
+    public static function GetCallingFile() {
+        $c = '';
+        $file = '';
+        $func = '';
+        $class = '';
+        $trace = debug_backtrace();
+        if (isset($trace[2])) {
+            $file = $trace[1]['file'];
+            $func = $trace[2]['function'];
+            if ((strpos($func, 'include') === 0) || (strpos($func, 'require') === 0)) {
+                $func = '';
+            }
+        } else if (isset($trace[1])) {
+            $file = $trace[1]['file'];
+        }
+        if (isset($trace[3]['class'])) {
+            $class = $trace[3]['class'];
+            $func = $trace[3]['function'];
+            $file = $trace[2]['file'];
+        } else if (isset($trace[2]['class'])) {
+            $class = $trace[2]['class'];
+            $func = $trace[2]['function'];
+            $file = $trace[1]['file'];
+        }
+        if ($file !== '') $file = basename($file);
+        $c = $file . ": ";
+        $c .= ($class !== '') ? ":" . $class . "->" : "";
+        $c .= ($func !== '') ? $func . "(): " : "";
+        return($c);
+    }
 
     /**
      * Prints to Log or on Screen the menu menu array.
