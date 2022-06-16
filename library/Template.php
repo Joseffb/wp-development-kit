@@ -2,7 +2,6 @@
 
 namespace WDK;
 
-use Timber\Helper;
 use Timber\Post;
 use Timber\Timber;
 use Twig\TwigFunction;
