@@ -9,8 +9,6 @@ use Twig\TwigFunction;
 class Template
 {
     private static $ext = ".twig";
-    private static $process_template = false;
-
     private static $templates = array(
         'is_embed' => 'embed',
         'is_attachment' => 'attachment',
