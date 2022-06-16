@@ -19,10 +19,12 @@
       "WDK\\": "library"
     }
   },
+  "support": {
+    "email": "wdk-support@joseffb.com"
+  },
   "authors": [
     {
-      "name": "Joseff Betancourt",
-      "email": "wp-developer-kit@joseffb.com"
+      "name": "Joseff Betancourt"
     }
   ],
   "require": {
