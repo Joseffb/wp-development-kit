@@ -28,8 +28,10 @@
   "require": {
     "composer/installers": "~1.0",
     "ext-json": "*",
-    "timber/timber": "dev-master",
-    "wp-graphql/wp-graphql": "dev-master"
+    "timber/timber": "dev-master"
+  },
+  "suggested": {
+    "wp-graphql/wp-graphql": "As a faster and alternative to the built in wp-json and wp-query system"
   },
   "require-dev": {
     "roave/security-advisories": "dev-latest"
@@ -39,7 +41,8 @@
       "type": "composer",
       "url": "https://wpackagist.org"
     }
-  ], "extra": {
+  ],
+  "extra": {
     "installer-paths": {
       "../../mu-plugins/{$name}/": [
         "type:wordpress-muplugin"
