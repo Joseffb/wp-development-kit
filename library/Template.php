@@ -111,6 +111,8 @@ class Template
                         $tag_name_check = get_option('process_template_tag_' . $tag_name);
                         if ($tag_check || $tag_name_check) {
                             $template = self::handle_tag($template, $base);
+                        } else {
+                            return false;
                         }
                         break;
                     case 'category':
