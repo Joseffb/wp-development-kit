@@ -45,18 +45,5 @@
       "type": "composer",
       "url": "https://wpackagist.org"
     }
-  ],
-  "extra": {
-    "installer-paths": {
-      "../../mu-plugins/{$name}/": [
-        "type:wordpress-muplugin"
-      ],
-      "../../plugins/{$name}/": [
-        "type:wordpress-plugin"
-      ],
-      "../../themes/{$name}/": [
-        "type:wordpress-theme"
-      ]
-    }
-  }
+  ]
 }
