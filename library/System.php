@@ -283,7 +283,6 @@ class System
                 add_action('init', function () use ($post_type, $post_title, $post_content, $post_meta) {
                     Post::CreatePost($post_type, $post_title, $post_content, $post_meta);
                 }, 10000);
-
             }
         }
     }
