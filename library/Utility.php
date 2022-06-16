@@ -62,8 +62,8 @@ class Utility
      */
     public static function IsTrue($val, bool $return_null = false)
     {
-            $bool_val = (is_string($val) ? filter_var($val, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE) : (bool)$val);
-            return ($bool_val === null && !$return_null ? false : $bool_val);
+        $bool_val = (is_string($val) ? filter_var($val, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE) : (bool)$val);
+        return ($bool_val === null && !$return_null ? false : $bool_val);
     }
     /**
      * writes info to log, with option debug backtrace
@@ -72,17 +72,13 @@ class Utility
      * @param bool | int $levels
      * @param int $deprecated_levels
      */
-    public static function Log($log, string $note = "", $levels = 0, int $deprecated_levels = 100): void
+    public static function Log($log, string $note = "", $levels = 0): void
     {
         $default_message = empty($note) ? "BACKTRACE>>> " : false;
         if (empty($default_message)) {
             $note = "Note: " . $note . "\n";
         }
 
-        if ($levels === true) {
-            //backward compatibility for older debug statements.
-            $levels = $deprecated_levels;
-        }
         $clean_last = false;
         if (empty($levels)) {
             $levels = 3;
@@ -96,10 +92,6 @@ class Utility
             $note .= $default_message;
         }
         if($debug[0]['function'] === 'Log') {
-            array_shift($debug);
-        }
-
-        if($debug[1]['function'] === 'Log') {
             array_shift($debug);
         }
 
@@ -180,37 +172,6 @@ class Utility
             });
         </script>
     <?php }
-
-    public static function GetCallingFile() {
-        $c = '';
-        $file = '';
-        $func = '';
-        $class = '';
-        $trace = debug_backtrace();
-        if (isset($trace[2])) {
-            $file = $trace[1]['file'];
-            $func = $trace[2]['function'];
-            if ((strpos($func, 'include') === 0) || (strpos($func, 'require') === 0)) {
-                $func = '';
-            }
-        } else if (isset($trace[1])) {
-            $file = $trace[1]['file'];
-        }
-        if (isset($trace[3]['class'])) {
-            $class = $trace[3]['class'];
-            $func = $trace[3]['function'];
-            $file = $trace[2]['file'];
-        } else if (isset($trace[2]['class'])) {
-            $class = $trace[2]['class'];
-            $func = $trace[2]['function'];
-            $file = $trace[1]['file'];
-        }
-        if ($file !== '') $file = basename($file);
-        $c = $file . ": ";
-        $c .= ($class !== '') ? ":" . $class . "->" : "";
-        $c .= ($func !== '') ? $func . "(): " : "";
-        return($c);
-    }
 
     /**
      * Prints to Log or on Screen the menu menu array.

@@ -16,12 +16,12 @@ class System
      */
     public static function Start(array $locations = []): bool
     {
-        $file = Utility::GetCallingFile();
-        Utility::Log($file, "Calling File Path");
 
+        $trace = debug_backtrace();
+        $call_path_dir = dirname($trace[0]['file']);
         if (!defined('WDK_CONFIG_BASE')) {
-            if (is_dir($file."/wdk/configs")) {
-                define("WDK_CONFIG_BASE", $file . "/wdk/configs");
+            if (is_dir($call_path_dir . "/wdk/configs")) {
+                define("WDK_CONFIG_BASE", $call_path_dir . "/wdk/configs");
             } else if ($config_base = [get_option('WDK_CONFIG_BASE')]) {
                 define("WDK_CONFIG_BASE", $config_base);
             } else if (is_dir(get_stylesheet_directory() . '/wdk/config')) {
@@ -32,35 +32,34 @@ class System
             }
         }
 
-
         if (!defined('WDK_TEMPLATE_LOCATIONS_BASE')) {
-            if (!empty($locations)) {
-                define("WDK_TEMPLATE_LOCATIONS_BASE", $locations);
+            if (is_dir($call_path_dir . "/wdk/views")) {
+                define("WDK_TEMPLATE_LOCATIONS_BASE", [$call_path_dir . "/wdk/views"]);
             } else if ($config_base = [get_option('WDK_TEMPLATE_LOCATIONS_BASE')]) {
                 define("WDK_TEMPLATE_LOCATIONS_BASE", $config_base);
             } else if (is_dir(plugin_dir_path() . '/wdk/views')) {
                 // template override locations
                 define("WDK_TEMPLATE_LOCATIONS_BASE", [plugin_dir_path() . '/wdk/views']);
-            else
-                if (is_dir(get_stylesheet_directory() . '/wdk/views')) {
-                    // template override locations
-                    define("WDK_TEMPLATE_LOCATIONS_BASE", [get_stylesheet_directory() . '/wdk/views']);
-                } else if (is_dir(__DIR__ . '/views')) {
-                    // template override locations
-                    define("WDK_TEMPLATE_LOCATIONS_BASE", [__DIR__ . '/views']);
-                } else {
-                    define("WDK_TEMPLATE_LOCATIONS_BASE", []);
-                }
+            } else if (is_dir(get_stylesheet_directory() . '/wdk/views')) {
+                // template override locations
+                define("WDK_TEMPLATE_LOCATIONS_BASE", [get_stylesheet_directory() . '/wdk/views']);
+            } else if (is_dir(__DIR__ . '/views')) {
+                // template override locations
+                define("WDK_TEMPLATE_LOCATIONS_BASE", [__DIR__ . '/views']);
+            } else {
+                define("WDK_TEMPLATE_LOCATIONS_BASE", []);
             }
         }
 
+
+
         //Setup json based configuration
-        try {
+        try
+        {
             self::Setup();
             //Setup Twig template system
             //looks for twig files in the following locations.
-            Template::Setup(array_merge(WDK_TEMPLATE_LOCATIONS_BASE, [
-                    plugin_dir_path() . "wdk/views", //for child templates
+            Template::Setup(array_merge(WDK_TEMPLATE_LOCATIONS_BASE, [$call_path_dir . "/wdk/views", //for child templates
                     get_stylesheet_directory() . "/wdk/views", //for child templates
                     get_stylesheet_directory(), //for child templates
                     get_stylesheet_directory() . "/wdk/views", //for child templates
@@ -69,12 +68,14 @@ class System
                     dirname(__DIR__) . '/views']
             ));
             return true;
-        } catch (\Exception $e) {
+        }
+
+        catch
+        (\Exception $e) {
             Utility::Log('JSON ERROR, Please validate config files.');
             return false;
         }
     }
-
 
     /**
      * Install command for the customizations in the config files.
