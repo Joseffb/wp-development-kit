@@ -11,7 +11,7 @@ use JsonException;
 class System
 {
     /**
-     * Called from a theme's functions file to start the framework.
+     * Called from a theme or plugin's functions file to start the framework.
      *
      */
     public static function Start($locations = []): bool
