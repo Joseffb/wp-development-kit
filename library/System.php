@@ -16,12 +16,37 @@ class System
      */
     public static function Start($locations = []): bool
     {
+
+        if (!defined('WDK_TEMPLATE_LOCATIONS_BASE')) {
+            if(!empty($locations)) {
+                define("WDK_TEMPLATE_LOCATIONS_BASE", $locations);
+            } else if ($config_base = get_option('WDK_TEMPLATE_LOCATIONS_BASE')) {
+                define("WDK_TEMPLATE_LOCATIONS_BASE", $config_base);
+            } else if(is_dir(get_stylesheet_directory() . '/wdk/views')) {
+                // template override locations
+                define("WDK_TEMPLATE_LOCATIONS_BASE",[get_stylesheet_directory() . '/wdk/views']);
+            } else {
+                define("WDK_TEMPLATE_LOCATIONS_BASE", []);
+            }
+        }
+
+        if (!defined('WDK_CONFIG_BASE')) {
+            if ($config_base = get_option('WDK_CONFIG_BASE')) {
+                define("WDK_CONFIG_BASE", $config_base);
+            } else if(is_dir(get_stylesheet_directory() . '/wdk/config')) {
+                // WP theme based config location
+                define("WDK_CONFIG_BASE", get_stylesheet_directory() . '/wdk/config');
+            } else {
+                define("WDK_CONFIG_BASE", __DIR__ . "/configs");
+            }
+        }
+
         //Setup json based configuration
         try{
             self::Setup();
             //Setup Twig template system
             //looks for twig files in the following locations.
-            Template::Setup(array_merge($locations, [
+            Template::Setup(array_merge(WDK_TEMPLATE_LOCATIONS_BASE, [
                     get_stylesheet_directory(), //for child templates
                     get_stylesheet_directory() . "/wdk/views", //for child templates
                     get_template_directory(),
