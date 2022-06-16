@@ -32,6 +32,30 @@ class Template
     );
 
     /**
+     * Returns the WP Header template as a variable for inclusion into context.
+     * @param null $name
+     * @param array $args
+     * @return false|string
+     */
+    public static function GetWPHeader($name = null, array $args= []) {
+        ob_start();
+        get_header($name, $args);
+        return ob_get_clean();
+    }
+
+    /**
+     * Returns the WP Footer template as a variable for inclusion into context.
+     * @param null $name
+     * @param array $args
+     * @return false|string
+     */
+    public static function GetWPFooter($name = null, array $args= []) {
+        ob_start();
+        get_footer($name, $args);
+        return ob_get_clean();
+    }
+
+    /**
      * Determine template to load.
      * @param string $engine
      * @return mixed
@@ -166,6 +190,8 @@ class Template
                 $twig->addFunction(new TwigFunction('paging', ['\WDK\Query', 'IsPaged']));
                 $twig->addFunction(new TwigFunction('log_it', ['\WDK\Utility', 'Log']));
                 $twig->addFunction(new TwigFunction('get_taxonomy_term_image', ['\WDK\Taxonomy', 'ProcessTermCustomImages']));
+                $twig->addFunction(new TwigFunction('get_wp_header', ['\WDK\Template', 'GetWPHeader']));
+                $twig->addFunction(new TwigFunction('get_wp_footer', ['\WDK\Template', 'GetWPFooter']));
                 return $twig;
             });
 
