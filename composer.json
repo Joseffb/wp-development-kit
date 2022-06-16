@@ -1,7 +1,6 @@
 {
   "name": "joseffb/wp-developer-kit",
   "description": "A development library to make creating things in wordpress a lot easier.",
-  "minimum-stability": "stable",
   "license": "MIT",
   "version": "0.0.1",
   "keywords": [
