@@ -342,4 +342,36 @@ class Shadow {
         }
         return false;
     }
+
+    /**
+     * Used for pagination when a shadow tax is used multiple times in same relationship.
+     * @param $taxName
+     * @return string
+     */
+
+    public static function GetNextNumberedShadowTaxName($taxName): string
+    {
+        //32 char limit on tax names so we just take 23 characers to allow us to add '_99_tax' at end.
+        $array = explode("_", $taxName);
+        if (last($array) === "tax") {
+            array_pop($array);
+        }
+        $lastNumber = (int)last($array);
+        if ($lastNumber > 0) {
+            array_pop($array);
+        }
+        $machine_tax_name = strtolower(substr(implode("_", $array), 0, 23));
+        $machine_tax_name = $lastNumber ? $machine_tax_name . "_" . $lastNumber . "_tax" : $machine_tax_name . "_1_tax";
+        if (taxonomy_exists($machine_tax_name)) {
+
+            $array = explode("_", $machine_tax_name);
+            if (last($array) === "tax") {
+                array_pop($array);
+            }
+            $lastNumber = (int)last($array);
+            array_pop($array);
+            $machine_tax_name = self::getNextNumberedShadowTaxName(implode("_", $array) . "_" . ($lastNumber + 1) . "_tax");
+        }
+        return $machine_tax_name;
+    }
 }

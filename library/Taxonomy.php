@@ -79,7 +79,6 @@ class Taxonomy
             'graphql_plural_name' => Inflector::pluralize($tax_machine_name),
             'rewrite' => array(
                 'slug' => $tax_slug,
-                'slug' => $tax_slug,
                 'with_front' => false,
             )
         ), $options);

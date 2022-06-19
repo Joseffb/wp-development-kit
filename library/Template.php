@@ -193,8 +193,6 @@ class Template
                 $twig->addFunction(new TwigFunction('get_wp_footer', ['\WDK\Template', 'GetWPFooter']));
                 return $twig;
             });
-
-
         } else {
             add_action('admin_notices', function () {
                 ?>
