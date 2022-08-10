@@ -19,25 +19,26 @@ class System
 
         $trace = debug_backtrace();
         $call_path_dir = dirname($trace[0]['file']);
+        //Utility::Log($call_path_dir, 'call_path');
         if (!defined('WDK_CONFIG_BASE')) {
             if (is_dir($call_path_dir . "/wdk/configs")) {
                 define("WDK_CONFIG_BASE", $call_path_dir . "/wdk/configs");
-            } else if ($config_base = [get_option('WDK_CONFIG_BASE')]) {
+            } else if ($config_base = get_option('WDK_CONFIG_BASE')) {
                 define("WDK_CONFIG_BASE", $config_base);
             } else if (is_dir(get_stylesheet_directory() . '/wdk/config')) {
                 // WP theme based config location
                 define("WDK_CONFIG_BASE", get_stylesheet_directory() . '/wdk/config');
             } else {
-                define("WDK_CONFIG_BASE", __DIR__ . "/configs");
+                define("WDK_CONFIG_BASE", dirname(__DIR__) . "/configs");
             }
         }
 
         if (!defined('WDK_TEMPLATE_LOCATIONS_BASE')) {
             if (is_dir($call_path_dir . "/wdk/views")) {
                 define("WDK_TEMPLATE_LOCATIONS_BASE", [$call_path_dir . "/wdk/views"]);
-            } else if ($config_base = [get_option('WDK_TEMPLATE_LOCATIONS_BASE')]) {
+            } else if ($config_base = get_option('WDK_TEMPLATE_LOCATIONS_BASE')) {
                 define("WDK_TEMPLATE_LOCATIONS_BASE", $config_base);
-            } else if (is_dir(plugin_dir_path() . '/wdk/views')) {
+            } else if (is_dir(plugin_dir_path(__FILE__) . '/wdk/views')) {
                 // template override locations
                 define("WDK_TEMPLATE_LOCATIONS_BASE", [plugin_dir_path() . '/wdk/views']);
             } else if (is_dir(get_stylesheet_directory() . '/wdk/views')) {
@@ -52,10 +53,8 @@ class System
         }
 
 
-
         //Setup json based configuration
-        try
-        {
+        try {
             self::Setup();
             //Setup Twig template system
             //looks for twig files in the following locations.
@@ -68,11 +67,10 @@ class System
                     dirname(__DIR__) . '/views']
             ));
             return true;
-        }
-
-        catch
+        } catch
         (\Exception $e) {
             Utility::Log('JSON ERROR, Please validate config files.');
+            Utility::Log($e);
             return false;
         }
     }
@@ -89,52 +87,55 @@ class System
     {
         //$config_files = get_stylesheet_directory() . '/app/Config';
         $config_files = WDK_CONFIG_BASE;
+        //Utility::Log($config_files, 'setup directory to find.');
         if (Utility::IsDirEmpty($config_files)) {
             $config_files = get_template_directory();
         }
-        $dir = new DirectoryIterator($dir ?: $config_files);
-        foreach ($dir as $fileinfo) {
-            if (!$fileinfo->isDot() && (bool)strpos($fileinfo->getFilename(), '.json')) {
-                $config_file = json_decode(file_get_contents($fileinfo->getRealPath()), true, 512, JSON_THROW_ON_ERROR);
-                if (!empty($config_file)) {
-                    switch (strtolower($fileinfo->getFilename())) {
-                        case 'posttypes.json':
-                        case 'post_types.json':
-                            self::ProcessPostTypes($config_file);
-                            break;
-                        case 'taxonomies.json':
-                        case 'taxonomy.json':
-                            self::ProcessTaxonomies($config_file);
-                            break;
-                        case 'shortcodes.json':
-                        case 'shortcode.json':
-                            self::ProcessShortcodes($config_file);
-                            break;
-                        case 'sidebars.json':
-                        case 'sidebar.json':
-                            self::ProcessSidebars($config_file);
-                            break;
-                        case 'menus.json':
-                        case 'menu.json':
-                            self::ProcessMenus($config_file);
-                            break;
-                        case 'widgets.json':
-                        case 'widget.json':
-                            self::ProcessWidgets($config_file);
-                            break;
-                        case 'fields.json':
-                        case 'field.json':
-                            self::ProcessFields($config_file);
-                            break;
-                        case 'pages.json':
-                        case 'page.json':
-                            self::ProcessPosts($config_file);
-                            break;
+        $dir = $dir ?: $config_files;
+        if (Utility::DoesDirExist($dir)) {
+            $dir = new DirectoryIterator($dir);
+            foreach ($dir as $fileinfo) {
+                if (!$fileinfo->isDot() && (bool)strpos($fileinfo->getFilename(), '.json')) {
+                    $config_file = json_decode(file_get_contents($fileinfo->getRealPath()), true, 512, JSON_THROW_ON_ERROR);
+                    if (!empty($config_file)) {
+                        switch (strtolower($fileinfo->getFilename())) {
+                            case 'posttypes.json':
+                            case 'post_types.json':
+                                self::ProcessPostTypes($config_file);
+                                break;
+                            case 'taxonomies.json':
+                            case 'taxonomy.json':
+                                self::ProcessTaxonomies($config_file);
+                                break;
+                            case 'shortcodes.json':
+                            case 'shortcode.json':
+                                self::ProcessShortcodes($config_file);
+                                break;
+                            case 'sidebars.json':
+                            case 'sidebar.json':
+                                self::ProcessSidebars($config_file);
+                                break;
+                            case 'menus.json':
+                            case 'menu.json':
+                                self::ProcessMenus($config_file);
+                                break;
+                            case 'widgets.json':
+                            case 'widget.json':
+                                self::ProcessWidgets($config_file);
+                                break;
+                            case 'fields.json':
+                            case 'field.json':
+                                self::ProcessFields($config_file);
+                                break;
+                            case 'pages.json':
+                            case 'page.json':
+                                self::ProcessPosts($config_file);
+                                break;
+                        }
                     }
                 }
             }
         }
-
         return null; //makes IDE happy
     }
 

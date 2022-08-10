@@ -26,7 +26,7 @@ WDK can be installed as a plugin (download and place into plugins folder) or ins
 ### Initialize the library
 - Inside your start file place the following command to initiate the composer autoloader:
 - `require_once __DIR__ . '/vendor/autoload.php'`;
-- Place teh following command to call and initiate WDK:
+- Place the following command to call and initiate WDK:
 `WDK\System::Start();`
 
 ## File structure
@@ -183,3 +183,9 @@ add_filter('wdk_context_templatename', function($context) {
     return $context;
 });
 ```
+
+### Change Log
+
+0.0.2 - Fixed warning when no config file is available.
+
+0.0.1 - Initial Release

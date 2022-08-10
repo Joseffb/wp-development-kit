@@ -292,10 +292,24 @@ class Utility
      */
     public static function IsDirEmpty($dir): ?bool
     {
-        if (!is_readable($dir)) {
+        //Utility::Log($dir, 'dir to check');
+        if (empty($dir) || !is_readable($dir)) {
             return NULL;
         }
         // if we see . and .. it's an empty directory.
-        return (count(scandir($dir)) === 2);
+        return (count(scandir($dir)) <= 2);
+    }
+    /**
+     * Checks if a folder exist and return canonicalized absolute pathname (sort version)
+     * @param string $folder the path being checked.
+     * @return mixed returns the canonicalized absolute pathname on success otherwise FALSE is returned
+     */
+    public static function DoesDirExist($dir)
+    {
+        // Get canonicalized absolute pathname
+        $path = realpath($dir);
+
+        // If it exist, check if it's a directory
+        return ($path !== false AND is_dir($path)) ? $path : false;
     }
 }
