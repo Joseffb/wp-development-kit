@@ -260,7 +260,7 @@ class Inflector {
 	 *
 	 * @var array
 	 */
-	protected static $_initialState = array();
+	protected static array $_initialState = [];
 
 	/**
 	 * Cache inflected values, and return if already available
@@ -283,23 +283,26 @@ class Inflector {
 		return self::$_cache[$type][$key];
 	}
 
-	/**
-	 * Clears Inflectors inflected value caches. And resets the inflection
-	 * rules to the initial values.
-	 *
-	 * @return void
-	 */
-	public static function reset() {
-		if (empty(self::$_initialState)) {
-			self::$_initialState = get_class_vars('Inflector');
-			return;
-		}
-		foreach (self::$_initialState as $key => $val) {
-			if ($key !== '_initialState') {
-				self::${$key} = $val;
-			}
-		}
-	}
+    /**
+     * Clears Inflectors inflected value caches. And resets the inflection
+     * rules to the initial values.
+     *
+     * @return void
+     */
+    public static function reset()
+    {
+        // If the initial state is empty, cache it
+        if (empty(self::$_initialState)) {
+            self::$_initialState = [];
+        } else {
+            // Restore the initial state
+            foreach (self::$_initialState as $key => $val) {
+                if ($key !== '_initialState') {
+                    self::${$key} = $val;
+                }
+            }
+        }
+    }
 
 	/**
 	 * Adds custom inflection $rules, of either 'plural', 'singular' or 'transliteration' $type.
