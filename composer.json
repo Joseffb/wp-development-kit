@@ -30,7 +30,7 @@
   ],
   "require": {
     "composer/installers": "~1.0",
-    "timber/timber": "1.19.2"
+    "timber/timber": "^1.22.1"
   },
   "suggest": {
     "wp-graphql/wp-graphql": "As a faster and alternative to the built in wp-json and wp-query system",
