@@ -3,11 +3,15 @@ namespace WDK;
 class Search {
     protected $search_provider;
 
-    public function __construct( WP_Search_Provider $search_provider = null ) {
-        if ( is_null( $search_provider ) ) {
-            $this->search_provider = new WP_Local_Search_Provider();
+    public function __construct( $provider = 'WP_Local_Search_Provider', $args = [] ) {
+        if ( !class_exists( $provider ) ) {
+            throw new InvalidArgumentException( 'Invalid search provider class provided.' );
+        }
+
+        if ( empty( $args ) ) {
+            $this->search_provider = new $provider();
         } else {
-            $this->search_provider = $search_provider;
+            $this->search_provider = new $provider( ...$args );
         }
     }
 
