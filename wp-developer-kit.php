@@ -17,7 +17,7 @@ require($autoloader);
 
 use WDK\System;
 
-const WDK_VERSION = '0.0.6';
+const WDK_VERSION = '0.0.7';
 const WDK_PLUGIN = __FILE__;
 
 define('WDK_PLUGIN_BASENAME',
