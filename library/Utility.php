@@ -275,7 +275,7 @@ class Utility
         return array_values($temp_array);
     }
 
-    public static function Enqueuer( $handle, $relpath, $type='script', $my_deps=array(), $in_footer ): void
+    public static function Enqueuer( $handle, $relpath, $type='script', $my_deps=array(), $in_footer = true ): void
     {
         $uri = get_theme_file_uri($relpath);
         $vsn = filemtime(get_theme_file_path($relpath));
