@@ -14,6 +14,11 @@ class Search {
             $this->search_provider = new $provider( ...$args );
         }
     }
+    public static function find( $query, $args = [], $provider = 'WP_Local_Search_Provider'  ): WP_Query
+    {
+        $search = new self( $provider, $args );
+        return $search->search( $query );
+    }
 
     public function set_search_provider( WP_Search_Provider $search_provider ) {
         $this->search_provider = $search_provider;
