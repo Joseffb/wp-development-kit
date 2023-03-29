@@ -5,7 +5,8 @@ namespace WDK;
  * CiviCRM class allows your application tp pass customer data back and forth from a centralized CiviCRM install.
  */
 
-use Exception;
+use GOVERNANCE\Class_CiviCRM_Factory;
+use RuntimeException;
 
 class CiviCRM
 {
@@ -17,7 +18,7 @@ class CiviCRM
     private static $entity = null;
 
     /**
-     * @throws Exception
+     * @throws \RuntimeException
      */
     private function __construct(
         $entity = null,
@@ -27,66 +28,28 @@ class CiviCRM
         $api_key = null
     )
     {
-        if (!$server) {
-            if (defined("CIVI_SERVER")) {
-                $server = CIVI_SERVER;
-            } else if (!defined("CIVI_SERVER") && $server = get_option('CIVI_SERVER')) {
-                define("CIVI_SERVER", $server);
-            }
-        }
-        self::$server = $server;
-
-        if (!$path) {
-            if (defined("CIVI_PATH")) {
-                $path = CIVI_PATH;
-            } else if (!defined("CIVI_PATH") && $path = get_option('CIVI_PATH')) {
-                define("CIVI_PATH", $path);
-            } else {
-                //Defaults to the WordPress CiviCRM default location
-                $path = '/wp-content/plugins/civicrm/civicrm/extern/rest.php';
-            }
-        }
-        self::$path = $path;
-
-        if (!$site_key) {
-            if (defined("CIVI_SITE_KEY")) {
-                $site_key = CIVI_SITE_KEY;
-            } else if (!defined("CIVI_SITE_KEY") && $site_key = get_option('CIVI_SITE_KEY')) {
-                define("CIVI_SITE_KEY", $site_key);
-            }
-        }
-        self::$site_key = $site_key;
-
-        if (!$api_key) {
-            if (defined("CIVI_API_KEY")) {
-                $api_key = CIVI_API_KEY;
-            } else if (!defined("CIVI_API_KEY") && $api_key = get_option('CIVI_API_KEY')) {
-                define("CIVI_API_KEY", $api_key);
-            }
-        }
-        self::$api_key = $api_key;
-
+        $path = $path ?: '/wp-content/plugins/civicrm/civicrm/extern/rest.php';
+        self::$server = $server ?: get_option('civi_server');
+        self::$path = $path ?: get_option('civi_path');
+        self::$site_key = $site_key ?: get_option('civi_site_key');
+        self::$api_key = $api_key ?: get_option('civi_api_key');
         self::$entity = $entity ?: self::$entity; //use new entity or the existing entity -- i.e. re-instance
         if (!self::$entity) {
             throw new \RuntimeException('Entity not provided to CiviAPI factory.');
         }
 
-        if (self::check_connection(self::$server . self::$path)) {
+        if (self::check_connection(self::$server . self::$path )) {
             $msg = 'The server ' . self::$server . self::$path . ' is not available';
+            MLA_Log($msg);
             throw new \RuntimeException($msg);
         }
     }
 
-    /**
-     * @param $url
-     * @return bool
-     */
-    public
-    static function check_connection($url)
+    public static function check_connection($url): bool
     {
         $timeout = ini_get('default_socket_timeout');
         ini_set('default_socket_timeout', 3); // wait 3 seconds for a response.
-        stream_context_set_default([
+        stream_context_set_default( [
             'ssl' => [
                 'verify_peer' => false,
                 'verify_peer_name' => false,
@@ -96,19 +59,19 @@ class CiviCRM
         ini_set('default_socket_timeout', $timeout); // reset to default timeout.
 
         $no_connection = (empty($review) || empty($review[0]));
-        return $no_connection || !str_contains($review[0], '200 OK');
+        return $no_connection || strpos($review[0], '200 OK') === false;
     }
 
     /**
-     * @throws Exception
+     * @param $entity
+     * @return CiviCRM
      */
-    public
-    static function instance($entity = null): CiviCRM
+    public static function instance($entity = null):CiviCRM
     {
+        self::$entity = !empty($entity)?$entity:'contact';
         if (self::$instance === null) {
             self::$instance = new self($entity);
         }
-        self::$entity = $entity;
         return self::$instance;
     }
 
@@ -116,10 +79,9 @@ class CiviCRM
      * @param string $method
      * @param array $params
      * @return array|\WP_Error
-     * @throws Exception
+     * @throws \RuntimeException
      */
-    public
-    static function run(array $params = [], string $method = 'get')
+    public function run(array $params = [], string $method = 'get')
     {
         /*
          * http://www.example.com/sites/all/modules/civicrm/extern/rest.php?api_key=t0ps3cr3t
@@ -147,21 +109,26 @@ class CiviCRM
             case "put":
             case "post":
             case "delete":
-                $data = json_decode((new CiviCRM)->JSONSendPost(self::$server . self::$path, $parameters), TRUE, 512, JSON_THROW_ON_ERROR);
+                $data = json_decode($this->json_send_post(self::$server . self::$path, $parameters), TRUE, 512, JSON_THROW_ON_ERROR);
                 break;
             case "get":
             default:
+//                add_action('http_api_debug', function ($r, $response, $Requests, $parsed_args, $url) {
+//                    MLA_Log($url);
+//                    MLA_Log($parsed_args);
+//                }, 10 , 5);
+
                 $json = file_get_contents(self::$server . self::$path . "?" . http_build_query($parameters));
                 $data = json_decode($json, TRUE, 512, JSON_THROW_ON_ERROR);
+            //MLA_Log($data);
         }
         return $data;
     }
 
     /**
-     * @throws Exception
+     * @throws \RuntimeException
      */
-    public
-    function action($action, $parameters)
+    public function action($action, $parameters)
     {
         switch ($action) {
             case 'create':
@@ -179,47 +146,42 @@ class CiviCRM
             unset($parameters['method']);
         }
 
-        return self::run(['entity' => self::$entity, 'action' => $action, 'params' => $parameters], $method);
+        return $this->run(['entity' => self::$entity, 'action' => $action, 'params' => $parameters], $method);
     }
 
     /**
-     * @throws Exception
+     * @throws \RuntimeException
      */
-    public
-    function create($parameters)
+    public function create($parameters)
     {
         return $this->action('create', $parameters);
     }
 
     /**
-     * @throws Exception
+     * @throws \RuntimeException
      */
-    public
-    function get($parameters)
+    public function get($parameters)
     {
         return $this->action('get', $parameters);
     }
 
     /**
-     * @throws Exception
+     * @throws \RuntimeException
      */
-    public
-    function update($parameters)
+    public function update($parameters)
     {
         return $this->action('update', $parameters);
     }
 
     /**
-     * @throws Exception
+     * @throws \RuntimeException
      */
-    public
-    function delete($parameters)
+    public function delete($parameters)
     {
         return $this->action('delete', $parameters);
     }
 
-    public
-    function JSONSendPost($url, $data, $headers = [])
+    public function json_send_post($url, $data, $headers = [])
     {
         $curl = curl_init($url . "?" . http_build_query($data));
         curl_setopt($curl, CURLOPT_URL, $url . "?" . http_build_query($data));
@@ -234,30 +196,20 @@ class CiviCRM
 
         //for debug only!
         //https://github.com/kalessil/phpinspectionsea/blob/master/docs/security.md#ssl-server-spoofin
-        curl_setopt($curl, CURLOPT_SSL_VERIFYHOST, WP_DEBUG ? 0 : 2);
-        curl_setopt($curl, CURLOPT_SSL_VERIFYPEER, WP_DEBUG ? 0 : 1);
+        $env = 'prod';
+        if(defined('WP_ENV')) {
+            $env = WP_ENV;
+        }
+
+        curl_setopt($curl, CURLOPT_SSL_VERIFYHOST, WP_DEBUG||strtolower($env)==='stage'?0:2);
+        curl_setopt($curl, CURLOPT_SSL_VERIFYPEER, WP_DEBUG||strtolower($env)==='stage'?0:1);
         curl_setopt($curl, CURLINFO_HEADER_OUT, true);
         $information = curl_getinfo($curl);
         // end debug
-//        MLA_Log($information);
+        //MLA_Log($information);
         $resp = curl_exec($curl);
-//        MLA_Log($resp);
+        //MLA_Log($resp);
         curl_close($curl);
         return $resp;
-    }
-
-    /**
-     * @throws Exception
-     */
-    //Contact functions use CiviCRM API endpoints
-    public static function CreateContact($parameters)
-    {
-        $parameters['contact_type'] = !empty($parameters['contact_type']) ? $parameters['contact_type'] : 'individual';
-        try {
-            return self::instance('contact')->create($parameters);
-        } catch (Exception $e) {
-            $msg = "Create Contact could not complete as desired. " . $e->getMessage();
-            return false;
-        }
     }
 }
