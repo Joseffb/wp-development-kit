@@ -16,7 +16,6 @@ class System
      */
     public static function Start(array $locations = []): bool
     {
-        Utility::Log('Inside System::Start');
         $trace = debug_backtrace();
         $call_path_dir = dirname($trace[0]['file']);
         //Utility::Log($call_path_dir, 'call_path');
@@ -92,9 +91,7 @@ class System
             $config_files = get_template_directory();
         }
         $dir = $dir ?: $config_files;
-        Utility::Log($dir, 'Dir search');
         if (Utility::DoesDirExist($dir)) {
-            Utility::Log('found dir');
             $dir = new DirectoryIterator($dir);
             foreach ($dir as $fileinfo) {
                 if (!$fileinfo->isDot() && (bool)strpos($fileinfo->getFilename(), '.json')) {
