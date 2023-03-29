@@ -40,8 +40,8 @@ class PostType
             $p = register_post_type($post_type_name, $args);
 
             if(!empty($args['use_twig'])) {
-                delete_option("process_template_cpt_$post_type_name"); //removes old data entries.
-                update_option("process_template_cpt_$post_type_name", true);
+                delete_option("wdk_process_template_cpt_$post_type_name"); //removes old data entries.
+                update_option("wdk_process_template_cpt_$post_type_name", true);
             }
             if (!empty($args['related_cpt']) && is_array($args['related_cpt'])) {
                 foreach ($args['related_cpt'] as $k) {

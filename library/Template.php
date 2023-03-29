@@ -72,8 +72,11 @@ class Template
                 $base = $template_getter;
                 switch ($base) {
                     case 'single':
-                        $post_type_check = get_option('process_template_cpt_' . $post->post_type); //run a twig template for the CPT archive page.
+                        $post_type_check = get_option('wdk_process_template_cpt_' . $post->post_type); //run a twig template for the CPT archive page.
                         if ($post_type_check) {
+                            if($post_type_check !== 'true') {
+                                $template[] = $post_type_check;
+                            }
                             $template = self::handle_single($post, $template, $base);
                         } else {
                             return false;
@@ -83,6 +86,9 @@ class Template
                         //check to run a Twig template on a specific page. set in functions file via update_post_meta($post_id, "process_template_page_PAGESLUG", true)
                         $page_check = get_post_meta($post->ID, 'process_template_page_' . $post->post_name, true);
                         if ($page_check) {
+                            if($page_check !== 'true') {
+                                $template[] = $page_check;
+                            }
                             $template = self::handle_page($post, $template, $base);
                         } else {
                             return false;
@@ -92,10 +98,16 @@ class Template
                         $term_name = get_query_var('term');
                         $taxonomy_name = get_query_var('taxonomy');
                         //checks if we should use a Twig template for all terms of taxonomy.
-                        $taxonomy_name_check = get_option('process_template_tax_' . $taxonomy_name);
+                        $taxonomy_name_check = get_option('wdk_process_template_tax_' . $taxonomy_name);
                         //checks if we should use a specific Twig template for a specific term in a specific taxonomy
-                        $taxonomy_id_check = get_option('process_template_tax_' . $taxonomy_name . "_" . $term_name);
+                        $taxonomy_id_check = get_option('wdk_process_template_tax_' . $taxonomy_name . "_" . $term_name);
                         if ($taxonomy_name_check || $taxonomy_id_check) {
+                            if($taxonomy_name_check !== 'true') {
+                                $template[] = $taxonomy_name_check;
+                            }
+                            if($taxonomy_id_check !== 'true') {
+                                $template[] = $taxonomy_id_check;
+                            }
                             $template = self::handle_taxonomy($template, $base);
                         } else {
                             return false;
@@ -103,10 +115,16 @@ class Template
                         break;
                     case 'tag':
                         $tag_name = get_query_var('tag');
-                        $tag_check = get_option('process_template_tag');
+                        $tag_check = get_option('wdk_process_template_tag');
                         //checks if we should use a Twig template for all tags.
-                        $tag_name_check = get_option('process_template_tag_' . $tag_name);
+                        $tag_name_check = get_option('wdk_process_template_tag_term_' . $tag_name);
                         if ($tag_check || $tag_name_check) {
+                            if($tag_check !== 'true') {
+                                $template[] = $tag_check;
+                            }
+                            if($tag_name_check !== 'true') {
+                                $template[] = $tag_name_check;
+                            }
                             $template = self::handle_tag($template, $base);
                         } else {
                             return false;
@@ -115,18 +133,31 @@ class Template
                     case 'category':
                         $cat_name = get_query_var('category_name');
                         //checks if we should use a Twig template for all terms of the default 'category' taxonomy.
-                        $category_check = get_option('process_template_tax_category');
+                        $category_check = get_option('wdk_process_template_tax_category');
                         //checks if we should use a specific Twig template for a specific term in a specific the default 'category' taxonomy
-                        $category_name_check = get_option('process_template_tax_category_' . $cat_name);
+                        $category_name_check = get_option('wdk_process_template_tax_category_' . $cat_name);
                         if ($category_check || $category_name_check) {
+                            if($category_check !== 'true') {
+                                $template[] = $category_check;
+                            }
+                            if($category_name_check !== 'true') {
+                                $template[] = $category_name_check;
+                            }
                             $template = self::handle_category($template, $base);
                         } else {
                             return false;
                         }
                         break;
                     default:
-                        $general_chk = get_option('process_template_' . $tag());
-                        if (!$general_chk) {
+                        $default = get_option('wdk_process_template_' . $tag());
+                        if ($default) {
+                            if($default !== 'true') {
+                                $template[] = $default;
+                            } else {
+                                $template[] = 'index';
+                            }
+                            $template[] = strtolower(str_replace(['-',' '], ["_", "_"], $template));
+                        } else {
                             return false;
                         }
                 }
@@ -140,8 +171,10 @@ class Template
      */
     public static function Setup($locations = [__DIR__ . '/views']): void
     {
+        Utility::Log('inside Template::Setup');
         Timber::$locations = $locations;
         if (class_exists(Timber::class)) {
+            Utility::Log('Found Timber');
             //add global context values for Timber
             add_filter('timber/context', static function () {
                 //$start = Helper::start_timer();
@@ -149,18 +182,19 @@ class Template
                 $templates = self::get_template();
                 $context['page-template'] = $templates;
                 $context['post'] = new Post();
-                if (WP_DEBUG) {
+                $show_templates = get_option('wdk_debug_show_templates');
+                if (WP_DEBUG || $show_templates) {
                     $context_hooks = [];
                 }
                 if (!empty($templates) && is_array($templates)) {
                     foreach (array_reverse($templates) as $name) {
                         $filter = 'wdk_context_' . str_replace(".twig", "", $name);
-                        if (WP_DEBUG) {
+                        if (WP_DEBUG || $show_templates) {
                             $context_hooks[] = $filter;
                         }
                         $context = apply_filters($filter, $context);
                     }
-                    if (WP_DEBUG) {
+                    if (WP_DEBUG || $show_templates) {
                         Utility::Log($context_hooks, 'Debug Only Message::Twig Template Context Hooks');
                     }
                 }
