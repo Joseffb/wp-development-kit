@@ -34,7 +34,8 @@ class Template
      * @param array $args
      * @return false|string
      */
-    public static function GetWPHeader($name = null, array $args= []) {
+    public static function GetWPHeader($name = null, array $args = [])
+    {
         ob_start();
         get_header($name, $args);
         return ob_get_clean();
@@ -46,7 +47,8 @@ class Template
      * @param array $args
      * @return false|string
      */
-    public static function GetWPFooter($name = null, array $args= []) {
+    public static function GetWPFooter($name = null, array $args = [])
+    {
         ob_start();
         get_footer($name, $args);
         return ob_get_clean();
@@ -66,7 +68,8 @@ class Template
 
         // Loop through each of the template conditionals, and find the appropriate template file base.
         $ext = '.twig';
-        $template = ['index' . $ext, 'base' . $ext];
+        $template = false;
+
         foreach (self::$templates as $tag => $template_getter) {
             if ($tag()) {
                 $base = $template_getter;
@@ -74,8 +77,8 @@ class Template
                     case 'single':
                         $post_type_check = get_option('wdk_process_template_cpt_' . $post->post_type); //run a twig template for the CPT archive page.
                         if ($post_type_check) {
-                            if($post_type_check !== 'true') {
-                                $template[] = $post_type_check;
+                            if ($post_type_check !== 'true') {
+                                $template = $post_type_check;
                             }
                             $template = self::handle_single($post, $template, $base);
                         } else {
@@ -86,8 +89,8 @@ class Template
                         //check to run a Twig template on a specific page. set in functions file via update_post_meta($post_id, "process_template_page_PAGESLUG", true)
                         $page_check = get_post_meta($post->ID, 'process_template_page_' . $post->post_name, true);
                         if ($page_check) {
-                            if($page_check !== 'true') {
-                                $template[] = $page_check;
+                            if ($page_check !== 'true') {
+                                $template = $page_check;
                             }
                             $template = self::handle_page($post, $template, $base);
                         } else {
@@ -102,11 +105,11 @@ class Template
                         //checks if we should use a specific Twig template for a specific term in a specific taxonomy
                         $taxonomy_id_check = get_option('wdk_process_template_tax_' . $taxonomy_name . "_" . $term_name);
                         if ($taxonomy_name_check || $taxonomy_id_check) {
-                            if($taxonomy_name_check !== 'true') {
-                                $template[] = $taxonomy_name_check;
+                            if ($taxonomy_name_check !== 'true') {
+                                $template = $taxonomy_name_check;
                             }
-                            if($taxonomy_id_check !== 'true') {
-                                $template[] = $taxonomy_id_check;
+                            if ($taxonomy_id_check !== 'true') {
+                                $template = $taxonomy_id_check;
                             }
                             $template = self::handle_taxonomy($template, $base);
                         } else {
@@ -119,11 +122,11 @@ class Template
                         //checks if we should use a Twig template for all tags.
                         $tag_name_check = get_option('wdk_process_template_tag_term_' . $tag_name);
                         if ($tag_check || $tag_name_check) {
-                            if($tag_check !== 'true') {
-                                $template[] = $tag_check;
+                            if ($tag_check !== 'true') {
+                                $template = $tag_check;
                             }
-                            if($tag_name_check !== 'true') {
-                                $template[] = $tag_name_check;
+                            if ($tag_name_check !== 'true') {
+                                $template = $tag_name_check;
                             }
                             $template = self::handle_tag($template, $base);
                         } else {
@@ -137,11 +140,11 @@ class Template
                         //checks if we should use a specific Twig template for a specific term in a specific the default 'category' taxonomy
                         $category_name_check = get_option('wdk_process_template_tax_category_' . $cat_name);
                         if ($category_check || $category_name_check) {
-                            if($category_check !== 'true') {
-                                $template[] = $category_check;
+                            if ($category_check !== 'true') {
+                                $template = $category_check;
                             }
-                            if($category_name_check !== 'true') {
-                                $template[] = $category_name_check;
+                            if ($category_name_check !== 'true') {
+                                $template = $category_name_check;
                             }
                             $template = self::handle_category($template, $base);
                         } else {
@@ -149,16 +152,11 @@ class Template
                         }
                         break;
                     default:
-                        $default = get_option('wdk_process_template_' . $tag());
-                        if ($default) {
-                            if($default !== 'true') {
-                                $template[] = $default;
-                            } else {
-                                $template[] = 'index';
-                            }
-                            $template[] = strtolower(str_replace(['-',' '], ["_", "_"], $template));
+                        $default = get_option('wdk_process_template_' . $base);
+                        if (Utility::IsTrue($default)) {
+                            $template = ['index' . $ext, 'base' . $ext];
                         } else {
-                            return false;
+                            $template = strtolower(str_replace([' '], ["_"], $default));
                         }
                 }
             }
@@ -171,22 +169,20 @@ class Template
      */
     public static function Setup($locations = [__DIR__ . '/views']): void
     {
-        Utility::Log('inside Template::Setup');
         Timber::$locations = $locations;
         if (class_exists(Timber::class)) {
-            Utility::Log('Found Timber');
             //add global context values for Timber
             add_filter('timber/context', static function () {
+                Utility::Log('inside context hook');
                 //$start = Helper::start_timer();
                 $context = Timber::context();
-                $templates = self::get_template();
-                $context['page-template'] = $templates;
-                $context['post'] = new Post();
-                $show_templates = get_option('wdk_debug_show_templates');
-                if (WP_DEBUG || $show_templates) {
-                    $context_hooks = [];
-                }
+                $context['page-template'] = $templates = self::get_template();
                 if (!empty($templates) && is_array($templates)) {
+                    $context['post'] = new Post();
+                    $show_templates = get_option('wdk_debug_show_templates');
+                    if (WP_DEBUG || $show_templates) {
+                        $context_hooks = [];
+                    }
                     foreach (array_reverse($templates) as $name) {
                         $filter = 'wdk_context_' . str_replace(".twig", "", $name);
                         if (WP_DEBUG || $show_templates) {
@@ -196,6 +192,10 @@ class Template
                     }
                     if (WP_DEBUG || $show_templates) {
                         Utility::Log($context_hooks, 'Debug Only Message::Twig Template Context Hooks');
+                    }
+                } else {
+                    if (WP_DEBUG || $show_templates) {
+                        Utility::Log('No Template - No Context Hooks', 'Debug Only Message::Twig Template');
                     }
                 }
 
