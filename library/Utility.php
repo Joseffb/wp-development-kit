@@ -72,6 +72,7 @@ class Utility
      * @param bool | int $levels
      * @param int $deprecated_levels
      */
+
     public static function Log($log, string $note = "", $levels = 0): void
     {
         $default_message = empty($note) ? "BACKTRACE>>> " : false;
@@ -79,37 +80,31 @@ class Utility
             $note = "Note: " . $note . "\n";
         }
 
-        $clean_last = false;
         if (empty($levels)) {
-            $levels = 3;
-            $clean_last = true;
+            $levels = 1;
         } else {
-            $levels += 2;
+            $levels += 1;
         }
 
-        $debug = debug_backtrace(1, $levels);
+        $debug = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, $levels + 1);
         if (!empty($default_message)) {
             $note .= $default_message;
         }
-        if($debug[0]['function'] === 'Log') {
+
+        if ($debug[0]['function'] === 'Log') {
             array_shift($debug);
         }
 
-        if($clean_last) {
-            array_pop($debug);
-        }
-        sort($debug);
         $note_array = [];
-        if(!empty($debug) && is_array($debug)) {
+        if (!empty($debug) && is_array($debug)) {
             foreach ($debug as $k) {
-                //error_log('debug: ' . print_r($k, true) . "\n");
-
                 $note_array[] = $note . $k['file'] . ":" . $k['line'];
             }
         }
-        $note = implode("\n ",$note_array);
-        error_log($note . "\n". print_r($log, true) . "\n");
+        $note = implode("\n ", $note_array);
+        error_log($note . "\n" . print_r($log, true) . "\n");
     }
+
     /**
      * Enqueue styles and scripts
      * @param string $tax_name
