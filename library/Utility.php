@@ -72,39 +72,27 @@ class Utility
      * @param bool | int $levels
      * @param int $deprecated_levels
      */
-
-    public static function Log($log, string $note = "", $levels = 0): void
+    public static function Log($log, string $note = "", int $levels = 0): void
     {
         $default_message = empty($note) ? "BACKTRACE>>> " : false;
         if (empty($default_message)) {
             $note = "Note: " . $note . "\n";
         }
 
-        if (empty($levels)) {
-            $levels = 1;
-        } else {
-            $levels += 1;
-        }
+        $levels++; // Increase levels to account for the function itself and this call
+        $debug = debug_backtrace(DEBUG_BACKTRACE_PROVIDE_OBJECT, $levels);
 
-        $debug = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, $levels + 1);
-        if (!empty($default_message)) {
-            $note .= $default_message;
-        }
-
-        if ($debug[0]['function'] === 'Log') {
-            array_shift($debug);
-        }
+        $origin = $debug[0]['file'] . ":" . $debug[0]['line'];
 
         $note_array = [];
         if (!empty($debug) && is_array($debug)) {
             foreach ($debug as $k) {
-                $note_array[] = $note . $k['file'] . ":" . $k['line'];
+                $note_array[] = $k['file'] . ":" . $k['line'];
             }
         }
-        $note = implode("\n ", $note_array);
+        $note = "$note" . implode("\n", $note_array);
         error_log($note . "\n" . print_r($log, true) . "\n");
     }
-
     /**
      * Enqueue styles and scripts
      * @param string $tax_name
