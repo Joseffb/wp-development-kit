@@ -90,7 +90,7 @@ class Utility
                 $note_array[] = $k['file'] . ":" . $k['line'];
             }
         }
-        $note = "$note" . implode("\n", $note_array);
+        $note = (string)$note . implode("\n", $note_array);
         error_log($note . "\n" . print_r($log, true) . "\n");
     }
     /**
