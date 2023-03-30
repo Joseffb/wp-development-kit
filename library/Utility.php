@@ -85,7 +85,7 @@ class Utility
         $origin = $debug[0]['file'] . ":" . $debug[0]['line'];
 
         $note_array = [];
-        if (!empty($debug) && is_array($debug)) {
+        if (!empty($debug)) {
             foreach ($debug as $k) {
                 $note_array[] = $k['file'] . ":" . $k['line'];
             }
