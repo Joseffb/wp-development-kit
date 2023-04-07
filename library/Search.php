@@ -1,7 +1,18 @@
 <?php
 namespace WDK;
+use http\Exception\BadMethodCallException;
+
 class Search {
     protected $search_provider;
+
+    public function __call($method, $arguments) {
+        // Handle the undefined method call
+        if (($this->search_provider ?? null) && method_exists($this->search_provider, $method)) {
+            return call_user_func_array([$this->search_provider, $method], $arguments);
+        }
+
+        throw new BadMethodCallException("'$method' does not exist in the current search provider", 10403);
+    }
 
     public function __construct( $provider = 'WP_Local_Search_Provider', $args = [] ) {
         if ( !class_exists( $provider ) ) {
@@ -16,8 +27,7 @@ class Search {
     }
     public static function find( $query, $args = [], $provider = 'WP_Local_Search_Provider'  ): WP_Query
     {
-        $search = new self( $provider, $args );
-        return $search->search( $query );
+        return (new self($provider, $args))->search( $query );
     }
 
     public function set_search_provider( WP_Search_Provider $search_provider ) {

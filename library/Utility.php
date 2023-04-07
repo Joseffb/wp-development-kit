@@ -82,8 +82,6 @@ class Utility
         $levels++; // Increase levels to account for the function itself and this call
         $debug = debug_backtrace(DEBUG_BACKTRACE_PROVIDE_OBJECT, $levels);
 
-        $origin = $debug[0]['file'] . ":" . $debug[0]['line'];
-
         $note_array = [];
         if (!empty($debug)) {
             foreach ($debug as $k) {
