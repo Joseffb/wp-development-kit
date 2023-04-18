@@ -46,5 +46,8 @@
       "type": "composer",
       "url": "https://wpackagist.org"
     }
-  ]
+  ],
+  "allow-plugins": {
+    "*": true
+  }
 }
