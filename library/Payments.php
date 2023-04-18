@@ -36,9 +36,30 @@ class Payments
         return (new self($provider, $args))::createPayment($payment_data);
     }
 
+    /**
+     * Set the payment provider.
+     *
+     * @param string|Payment_Provider $payment_provider The name of the provider class or an instance of a PaymentProvider.
+     * @throws InvalidArgumentException If an invalid payment provider type or class is provided.
+     * @return void
+     */
     public function set_payment_provider($payment_provider)
     {
-        $this->payment_provider = $payment_provider;
+        if (is_string($payment_provider)) {
+            if (!class_exists($payment_provider)) {
+                throw new InvalidArgumentException('Invalid payment provider class provided.');
+            }
+
+            if (!is_subclass_of($payment_provider, Payment_Provider::class)) {
+                throw new InvalidArgumentException('Payment provider class must extend PaymentProvider.');
+            }
+
+            $this->payment_provider = new $payment_provider();
+        } elseif ($payment_provider instanceof Payment_Provider) {
+            $this->payment_provider = $payment_provider;
+        } else {
+            throw new InvalidArgumentException('Invalid payment provider type provided. Must be a class name or an instance of PaymentProvider.');
+        }
     }
 }
 
