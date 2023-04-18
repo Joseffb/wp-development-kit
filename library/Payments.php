@@ -51,14 +51,14 @@ class Payments
             }
 
             if (!is_subclass_of($payment_provider, Payment_Provider::class)) {
-                throw new InvalidArgumentException('Payment provider class must extend PaymentProvider.');
+                throw new InvalidArgumentException('Payment provider class must extend Payment_Provider.');
             }
 
             $this->payment_provider = new $payment_provider();
         } elseif ($payment_provider instanceof Payment_Provider) {
             $this->payment_provider = $payment_provider;
         } else {
-            throw new InvalidArgumentException('Invalid payment provider type provided. Must be a class name or an instance of PaymentProvider.');
+            throw new InvalidArgumentException('Invalid payment provider type provided. Must be a class name or an instance of Payment_Provider.');
         }
     }
 }
