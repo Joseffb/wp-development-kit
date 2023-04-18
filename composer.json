@@ -31,12 +31,12 @@
   "require": {
     "composer/installers": "~1.0",
     "timber/timber": "^1.22.1",
-    "guzzlehttp/guzzle": "~7.0",
-    "ext-json": "*",
-    "ext-http": "*"
+    "guzzlehttp/guzzle": "~7.0"
   },
   "suggest": {
-    "wp-graphql/wp-graphql": "As a faster and alternative to the built in wp-json and wp-query system"
+    "wp-graphql/wp-graphql": "As a faster and alternative to the built in wp-json and wp-query system",
+    "ext-json": "*",
+    "ext-http": "*"
   },
   "require-dev": {
     "roave/security-advisories": "dev-latest"
