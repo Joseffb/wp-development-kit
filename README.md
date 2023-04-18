@@ -69,16 +69,20 @@ Most of the arguments are pretty straight forward and with some being extra and 
 #### Post Types
 Extra Options:
 - use_twig: used to tell WDK to use a Twig based template for that CPT type. The template will be looking in the /wdk/views folder of your root directory for 'single-CPTNAME.twig'. Any WordPress template (such as archive) can be replaced using an update_option(wdk_template_TEMPLATENAME); in your functions file.;
-- related_cpt: an array identifying the name singular name of the CPT that should be linked to this CPT record. Linked CPT will show up as taxonomies for this CPT.
+- shadow_in_cpt: an array identifying the name singular name of the CPT that should be linked with this CPT definition. Shadow CPT will show up as a taxonomy for this CPT record.
 
 Example json file:
 ```json
 [
   {
+    "name": "Destinations", 
+    ...
+  },
+  {
     "name": "Events",
     "args": {
         "use_twig": true,
-        "related_cpt": [],
+        "shadow_in_cpt": ["destination"],
         "label": "Events",
         "labels": {
             "name": "Events",
@@ -118,6 +122,8 @@ Example json file:
   }
 ]
 ```
+###### ex. 'Event' cpt records will now be displayed as available in a taxonomy/category called 'Events' within the Destination record admin.
+
 #### Taxonomy
 Extra Options:
 - show_as_admin_filter: defaults to true. Will add a filter to the top of the standard WP CPT page for you.
