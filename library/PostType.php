@@ -43,8 +43,10 @@ class PostType
                 delete_option("wdk_process_template_cpt_$post_type_name"); //removes old data entries.
                 update_option("wdk_process_template_cpt_$post_type_name", true);
             }
-            if (!empty($args['related_cpt']) && is_array($args['related_cpt'])) {
-                foreach ($args['related_cpt'] as $k) {
+            //Version 0.0.10 changes related_cpt for shadow_in_cpt which is a more accurate name.
+            $shadow_cpt = $args['related_cpt'] ?? $args['shadow_in_cpt'];
+            if (!empty($shadow_cpt) && is_array($shadow_cpt)) {
+                foreach ($shadow_cpt as $k) {
                     $machine_tax_name = strtolower(substr(str_replace(" ", "_", $k . "_" . $post_type_name), 0, 28)) . "_tax";
                     if (!taxonomy_exists($machine_tax_name)) {
                         Taxonomy::CreateCustomTaxonomy(['human' => $name, "machine" => $machine_tax_name], [$k], [], [
