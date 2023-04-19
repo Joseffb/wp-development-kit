@@ -67,7 +67,6 @@ class Payments
 }
 
 // Usage:
-// Usage:
 
 // 1. Creating a payment using the default PayPal provider
 //    $payment_data = [
@@ -91,7 +90,8 @@ class Payments
 //            'cancel_url' => 'https://example.com/cancel'
 //        ]
 //    ];
-//    $payment = Payments::create_payment($payment_data);
+//    $args = [client_id, client_secret];
+//    $payment = Payments::create_payment($payment_data,$args);
 
 // 2. Creating a payment using the Authorize.Net provider
 //    $payment_data = [
