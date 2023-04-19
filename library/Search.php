@@ -1,6 +1,7 @@
 <?php
 namespace WDK;
 use http\Exception\BadMethodCallException;
+use http\Exception\InvalidArgumentException;
 
 class Search {
     protected $search_provider;

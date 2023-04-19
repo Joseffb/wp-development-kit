@@ -10,5 +10,5 @@ abstract class Payment_Provider
      * @param array $payment_data An associative array containing the payment information.
      * @return mixed The result of the payment creation, specific to the provider implementation.
      */
-    abstract public function createPayment(array $payment_data);
+    abstract public function create_payment(array $payment_data);
 }

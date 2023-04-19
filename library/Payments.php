@@ -6,7 +6,7 @@ use http\Exception\InvalidArgumentException;
 
 class Payments
 {
-    protected $payment_provider;
+    protected Payment_Provider $payment_provider;
 
     public function __call($method, $arguments)
     {
@@ -25,16 +25,15 @@ class Payments
         }
 
         if (empty($args)) {
-            $this->payment_provider = new $provider();
+            $this->set_payment_provider($provider);
         } else {
-            $this->payment_provider = new $provider(...$args);
+            $this->set_payment_provider( new $provider(...$args));
         }
     }
 
-    public static function createPayment($payment_data, $args = [], $provider = 'PayPal_Rest_API_Provider')
+    public static function create_payment($payment_data, $args = [], $provider = 'PayPal_Rest_API_Provider')
     {
-        return (new self($provider, $args))::createPayment($payment_data);
-    }
+        return (new self($provider, $args))->payment_provider->create_payment($payment_data);    }
 
     /**
      * Set the payment provider.
@@ -43,7 +42,7 @@ class Payments
      * @throws InvalidArgumentException If an invalid payment provider type or class is provided.
      * @return void
      */
-    public function set_payment_provider($payment_provider)
+    public function set_payment_provider($payment_provider,$args = []): void
     {
         if (is_string($payment_provider)) {
             if (!class_exists($payment_provider)) {
@@ -54,7 +53,11 @@ class Payments
                 throw new InvalidArgumentException('Payment provider class must extend Payment_Provider.');
             }
 
-            $this->payment_provider = new $payment_provider();
+            if(!empty($args)) {
+                $this->payment_provider = new $payment_provider(...$args);
+            } else {
+                $this->payment_provider = new $payment_provider();
+            }
         } elseif ($payment_provider instanceof Payment_Provider) {
             $this->payment_provider = $payment_provider;
         } else {
@@ -63,15 +66,65 @@ class Payments
     }
 }
 
-//Usage:
-//// Create a payment using PayPal provider
-//$payment_data = [
-//    // Your payment data here
-//];
-//$payment = Payments::createPayment($payment_data);
-//
-//// Create a payment using Authorize.Net provider
-//$payment_data = [
-//    // Your payment data here
-//];
-//$payment = Payments::createPayment($payment_data, [], 'AuthorizeNet_Rest_API_Provider');
+// Usage:
+// Usage:
+
+// 1. Creating a payment using the default PayPal provider
+//    $payment_data = [
+//        // Your payment data here
+//        'intent' => 'sale',
+//        'payer' => [
+//            'payment_method' => 'paypal'
+//        ],
+//        'transactions' => [
+//            [
+//                'amount' => [
+//                    'total' => '10.00',
+//                    'currency' => 'USD'
+//                ],
+//                'description' => 'Payment description',
+//                'invoice_number' => uniqid()
+//            ]
+//        ],
+//        'redirect_urls' => [
+//            'return_url' => 'https://example.com/success',
+//            'cancel_url' => 'https://example.com/cancel'
+//        ]
+//    ];
+//    $payment = Payments::create_payment($payment_data);
+
+// 2. Creating a payment using the Authorize.Net provider
+//    $payment_data = [
+//        // Your payment data here
+//        'amount' => 10.00,
+//        'card_number' => '4111111111111111',
+//        'expiration_date' => '12/24',
+//        'cvv' => '123',
+//        'first_name' => 'John',
+//        'last_name' => 'Doe',
+//        'address' => '123 Main St',
+//        'city' => 'New York',
+//        'state' => 'NY',
+//        'zip' => '10001',
+//        'country' => 'US',
+//    ];
+//    $args = ['api_login_id', 'transaction_key'];
+//    $payment = Payments::create_payment($payment_data, $args, 'AuthorizeNet_Rest_API_Provider');
+
+// 3. Creating a payment using the Stripe provider
+//    $payment_data = [
+//        // Your payment data here
+//        'amount' => 10.00,
+//        'card_number' => '4242424242424242',
+//        'expiration_date' => '12/24',
+//        'cvv' => '123',
+//        'first_name' => 'John',
+//        'last_name' => 'Doe',
+//        'address' => '123 Main St',
+//        'city' => 'New York',
+//        'state' => 'NY',
+//        'zip' => '10001',
+//        'country' => 'US',
+//    ];
+//    $args = ['sk_test_123456', 'acct_12345'];
+//    $payment = Payments::create_payment($payment_data, $args, 'Stripe_Rest_Api_Provider');
