@@ -19,7 +19,6 @@ class CiviCRM_Search_Provider extends WP_Search_Provider {
         $this->default_method = $default_method;
     }
 
-
     /**
      * @param string $query
      * @param array|null $args

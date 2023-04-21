@@ -52,7 +52,13 @@ class Search
         return $this->search_provider->search($query, $args);
     }
 
-    public static function wp_query_return($posts, $count = null, $pagination = 1)
+    /**
+     * @param $posts
+     * @param $count
+     * @param $pagination
+     * @return \WP_Query
+     */
+    public static function wp_query_return($posts, $count = null, $pagination = 1): \WP_Query
     {
         $count = $count??count($posts);
         return new class($posts, $count, $pagination) extends \WP_Query {
