@@ -26,7 +26,7 @@ class Search {
             $this->search_provider = new $provider( ...$args );
         }
     }
-    public static function find( $query, $args = [], $provider = 'WP_Local_Search_Provider'  ): WP_Query
+    public static function find( $query, $args = [], $provider = 'WP_Local_Search_Provider'  ): \WP_Query
     {
         return (new self($provider, $args))->search( $query );
     }
@@ -35,7 +35,7 @@ class Search {
         $this->search_provider = $search_provider;
     }
 
-    public function search( $query, $args = [] ): WP_Query
+    public function search( $query, $args = [] ): \WP_Query
     {
         return $this->search_provider->search( $query, $args );
     }
