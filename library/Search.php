@@ -2,12 +2,13 @@
 
 namespace WDK;
 
+use WDK\WP_Search_Provider;
 use http\Exception\BadMethodCallException;
 use http\Exception\InvalidArgumentException;
 
 class Search
 {
-    protected $search_provider;
+    protected WP_Search_Provider $search_provider;
 
     public function __call($method, $arguments)
     {

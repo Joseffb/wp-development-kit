@@ -1,6 +1,8 @@
 <?php
 
 namespace WDK;
+
+use WDK\Payment_Provider;
 use http\Exception\BadMethodCallException;
 use http\Exception\InvalidArgumentException;
 
