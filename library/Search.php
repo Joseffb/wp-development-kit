@@ -26,9 +26,9 @@ class Search
         }
 
         if (empty($args)) {
-            $this->search_provider = new $provider();
+            $this->set_search_provider($provider);
         } else {
-            $this->search_provider = new $provider(...$args);
+            $this->set_search_provider( new $provider(...$args));
         }
     }
 
@@ -37,9 +37,27 @@ class Search
         return (new self($provider, $args))->search($query);
     }
 
-    public function set_search_provider(WP_Search_Provider $search_provider)
+    public function set_search_provider($search_provider, $args = []): void
     {
-        $this->search_provider = $search_provider;
+        if (is_string($search_provider)) {
+            if (!class_exists($search_provider)) {
+                throw new InvalidArgumentException('Invalid search provider class provided.');
+            }
+
+            if (!is_subclass_of($search_provider, WP_Search_Provider::class)) {
+                throw new InvalidArgumentException('Search provider class must extend WP_Search_Provider.');
+            }
+
+            if (!empty($args)) {
+                $this->search_provider = new $search_provider(...$args);
+            } else {
+                $this->search_provider = new $search_provider();
+            }
+        } elseif ($search_provider instanceof WP_Search_Provider) {
+            $this->search_provider = $search_provider;
+        } else {
+            throw new InvalidArgumentException('Invalid search provider type provided. Must be a class name or an instance of WP_Search_Provider.');
+        }
     }
 
     /**
