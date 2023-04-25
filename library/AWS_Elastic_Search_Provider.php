@@ -67,6 +67,54 @@ class AWS_Elastic_Search_Provider extends WP_Search_Provider {
         add_action('delete_post', [$provider, 'delete_post_from_elastic_search']);
     }
 
+    protected function is_available(): bool
+    {
+        $config = [
+            'region' => defined('AWS_REGION') ? constant('AWS_REGION') : 'us-east-1',
+            'access_key' => defined('AWS_ACCESS_KEY') ? constant('AWS_ACCESS_KEY') : 'YourAccessKeyHere',
+            'secret_key' => defined('AWS_SECRET_KEY') ? constant('AWS_SECRET_KEY') : 'YourSecretKeyHere',
+            'endpoint' => defined('AWS_ELASTIC_ENDPOINT') ? constant('AWS_ELASTIC_ENDPOINT') : 'https://search-your-instance-id.us-east-1.es.amazonaws.com',
+            'index' => defined('AWS_ELASTIC_INDEX') ? constant('AWS_ELASTIC_INDEX') : 'your_index_name',
+            'doc_type' => defined('AWS_ELASTIC_DOC_TYPE') ? constant('AWS_ELASTIC_DOC_TYPE') : '_doc',
+        ];
+
+        // Instantiate the AWS SDK client
+        $client = Elasticsearch\ClientBuilder::create()
+            ->setRegion($config['region'])
+            ->setCredentials([
+                'key' => $config['access_key'],
+                'secret' => $config['secret_key'],
+            ])
+            ->setEndpoint($config['endpoint'])
+            ->build();
+
+        try {
+            // Ping the Elasticsearch instance
+            $response = $client->ping();
+
+            // Check that the response was successful
+            if ($response !== true) {
+                return false;
+            }
+
+            // Check that the Elasticsearch index and doc type exist
+            $params = [
+                'index' => $config['index'],
+                'type' => $config['doc_type'],
+            ];
+
+            $exists = $client->indices()->existsType($params);
+
+            if (!$exists) {
+                return false;
+            }
+
+            return true;
+        } catch (\Exception $e) {
+            return false;
+        }
+    }
+
     /**
      * Adds a post to the ElasticSearch index.
      *

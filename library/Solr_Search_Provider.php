@@ -28,6 +28,19 @@ class Solr_Search_Provider extends WP_Search_Provider
         ]);
     }
 
+    function is_available($host, $port, $path = '/solr/mycore'): bool
+    {
+        $url = "http://$host:$port$path";
+        $ch = curl_init($url);
+        curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 1);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_exec($ch);
+        $httpcode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        curl_close($ch);
+
+        return $httpcode === 200;
+    }
+
     public static function register_solr_indexing($hostname = null, $port = null, $path = null)
     {
         $port = $port ?? defined('SOLR_PORT') ? constant('SOLR_PORT') : 8983;
