@@ -146,6 +146,10 @@ GQL;
         return $gql_query;
     }
 
+    /**
+     * @param $fields
+     * @return array
+     */
     protected function build_fields($fields): array {
         $default_fields = [
             'id',
@@ -159,9 +163,27 @@ GQL;
                 ]
             ]
         ];
-        return array_merge_recursive($default_fields, $fields);
+        // If only one field is provided, convert it to an array
+        if (is_string($fields)) {
+            $fields = [$fields];
+        }
+        $fields = array_merge_recursive($default_fields, $fields);
+
+        // Remove any keys that don't exist in the provided fields
+        $default_keys = array_keys($default_fields);
+        foreach ($fields as $key => $value) {
+            if (!in_array($key, $default_keys, true)) {
+                unset($fields[$key]);
+            }
+        }
+
+        return $fields;
     }
 
+    /**
+     * @param $fields
+     * @return string
+     */
     protected function build_fields_query($fields): string
     {
         $fields_query = [];
