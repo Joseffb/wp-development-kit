@@ -9,8 +9,8 @@ use GRAPHQLWP\GRAPHQLWP;
  *
  * Example usage:
  *
- * // Create a new instance of the Search class with the GraphQL_Search_Provider
- * $search = new Search('GraphQL_Search_Provider');
+ * // Create a new instance of the GraphQL_Search_Provider class
+ * $search = new GraphQL_Search_Provider();
  *
  * // Set the fields to return within the search results
  * $fields = [
@@ -85,7 +85,8 @@ class GraphQL_Search_Provider extends WP_Search_Provider
         ]
     ];
 
-    public function __construct(array $fields = []) {
+    public function __construct(array $fields = [])
+    {
         if (!class_exists('GRAPHQLWP\GRAPHQLWP')) {
             throw new \BadMethodCallException('GraphQLWP plugin is not installed.');
         }
@@ -93,7 +94,8 @@ class GraphQL_Search_Provider extends WP_Search_Provider
         $this->fields = $this->build_fields($fields);
     }
 
-    public function search($query, $args = []) {
+    public function search($query, $args = [])
+    {
         try {
             $result = $this->graphql->executeQuery($this->build_query($query, $this->fields, $args), []);
         } catch (\Exception $e) {
@@ -109,7 +111,16 @@ class GraphQL_Search_Provider extends WP_Search_Provider
         return search::wp_query_return($data['posts']);
     }
 
-    protected function build_query($query, array $fields = [], ?string $post_type = null, ?array $taxonomies = null, ?array $meta_query = null): string {
+    /**
+     * @param $query
+     * @param array $fields
+     * @param ?string|null $post_type
+     * @param ?array|null $taxonomies
+     * @param ?array|null $meta_query
+     * @return string
+     */
+    protected function build_query($query, array $fields = [], ?string $post_type = null, ?array $taxonomies = null, ?array $meta_query = null): string
+    {
         $fields = $fields ?: $this->default_fields;
         $fields_query = $this->build_fields_query($fields);
 
@@ -147,7 +158,8 @@ GQL;
         return $gql_query;
     }
 
-    protected function build_fields($fields): array {
+    protected function build_fields($fields): array
+    {
         if (!$fields) {
             return $this->default_fields;
         }
@@ -166,10 +178,12 @@ GQL;
         }
 
         return $fields;
-    }/**
- * @param $fields
- * @return string
- */
+    }
+
+    /**
+     * @param $fields
+     * @return string
+     */
     protected function build_fields_query($fields): string
     {
         $fields_query = [];
