@@ -2,8 +2,6 @@
 
 namespace WDK;
 
-use WDK\WP_Search_Provider;
-
 class GraphQL_Search_Provider extends WP_Search_Provider {
     protected \GraphQLWP\GraphQLWP $graphql;
 
