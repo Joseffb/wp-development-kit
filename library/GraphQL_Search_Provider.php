@@ -71,9 +71,19 @@ use GRAPHQLWP\GRAPHQLWP;
  */
 class GraphQL_Search_Provider extends WP_Search_Provider
 {
-
     protected GRAPHQLWP $graphql;
-    protected array $fields;
+    protected array $default_fields = [
+        'id',
+        'title',
+        'excerpt',
+        'uri',
+        'date',
+        'featuredImage' => [
+            'node' => [
+                'sourceUrl'
+            ]
+        ]
+    ];
 
     public function __construct(array $fields = []) {
         if (!class_exists('GRAPHQLWP\GRAPHQLWP')) {
@@ -85,7 +95,7 @@ class GraphQL_Search_Provider extends WP_Search_Provider
 
     public function search($query, $args = []) {
         try {
-            $result = $this->graphql->executeQuery($this->build_query($query), []);
+            $result = $this->graphql->executeQuery($this->build_query($query, $this->fields, $args), []);
         } catch (\Exception $e) {
             return new \WP_Error('graphql_error', $e->getMessage());
         }
@@ -99,17 +109,8 @@ class GraphQL_Search_Provider extends WP_Search_Provider
         return search::wp_query_return($data['posts']);
     }
 
-    /**
-     * @param $query
-     * @param array|null $fields
-     * @param string|null $post_type
-     * @param array|null $taxonomies
-     * @param array|null $meta_query
-     * @return string
-     */
-    protected function build_query($query, ?array $fields = null, ?string $post_type = null, ?array $taxonomies = null, ?array $meta_query = null): string
-    {
-        $fields = $fields ?? $this->fields;
+    protected function build_query($query, array $fields = [], ?string $post_type = null, ?array $taxonomies = null, ?array $meta_query = null): string {
+        $fields = $fields ?: $this->default_fields;
         $fields_query = $this->build_fields_query($fields);
 
         $where = 'search: "' . $query . '"';
@@ -146,31 +147,18 @@ GQL;
         return $gql_query;
     }
 
-    /**
-     * @param $fields
-     * @return array
-     */
     protected function build_fields($fields): array {
-        $default_fields = [
-            'id',
-            'title',
-            'excerpt',
-            'uri',
-            'date',
-            'featuredImage' => [
-                'node' => [
-                    'sourceUrl'
-                ]
-            ]
-        ];
+        if (!$fields) {
+            return $this->default_fields;
+        }
         // If only one field is provided, convert it to an array
         if (is_string($fields)) {
             $fields = [$fields];
         }
-        $fields = array_merge_recursive($default_fields, $fields);
+        $fields = array_merge_recursive($this->default_fields, $fields);
 
-        // Remove any keys that don't exist in the provided fields
-        $default_keys = array_keys($default_fields);
+        // Remove any keys that don't exist in the default fields
+        $default_keys = array_keys($this->default_fields);
         foreach ($fields as $key => $value) {
             if (!in_array($key, $default_keys, true)) {
                 unset($fields[$key]);
@@ -178,12 +166,10 @@ GQL;
         }
 
         return $fields;
-    }
-
-    /**
-     * @param $fields
-     * @return string
-     */
+    }/**
+ * @param $fields
+ * @return string
+ */
     protected function build_fields_query($fields): string
     {
         $fields_query = [];
