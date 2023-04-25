@@ -10,6 +10,11 @@ class Search
 {
     protected WP_Search_Provider $search_provider;
 
+    /**
+     * @param $method
+     * @param $arguments
+     * @return mixed
+     */
     public function __call($method, $arguments)
     {
         // Handle the undefined method call
@@ -20,6 +25,10 @@ class Search
         throw new BadMethodCallException("'$method' does not exist in the current search provider", 10403);
     }
 
+    /**
+     * @param $provider
+     * @param $args
+     */
     public function __construct($provider = 'WP_Local_Search_Provider', $args = [])
     {
         if (!class_exists($provider)) {
@@ -33,11 +42,22 @@ class Search
         }
     }
 
+    /**
+     * @param $query
+     * @param $args
+     * @param $provider
+     * @return \WP_Query
+     */
     public static function find($query, $args = [], $provider = 'WP_Local_Search_Provider'): \WP_Query
     {
         return (new self($provider, $args))->search($query);
     }
 
+    /**
+     * @param $search_provider
+     * @param $args
+     * @return void
+     */
     public function set_search_provider($search_provider, $args = []): void
     {
         if (is_string($search_provider)) {

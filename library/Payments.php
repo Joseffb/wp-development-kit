@@ -41,10 +41,10 @@ class Payments
      * Set the payment provider.
      *
      * @param string|Payment_Provider $payment_provider The name of the provider class or an instance of a PaymentProvider.
-     * @throws InvalidArgumentException If an invalid payment provider type or class is provided.
+     * @param array $args
      * @return void
      */
-    public function set_payment_provider($payment_provider,$args = []): void
+    public function set_payment_provider($payment_provider, array $args = []): void
     {
         if (is_string($payment_provider)) {
             if (!class_exists($payment_provider)) {
