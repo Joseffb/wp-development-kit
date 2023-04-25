@@ -67,7 +67,7 @@ class AWS_Elastic_Search_Provider extends WP_Search_Provider {
         add_action('delete_post', [$provider, 'delete_post_from_elastic_search']);
     }
 
-    protected function is_available(): bool
+    public static function is_available(): bool
     {
         $config = [
             'region' => defined('AWS_REGION') ? constant('AWS_REGION') : 'us-east-1',

@@ -28,7 +28,7 @@ class Solr_Search_Provider extends WP_Search_Provider
         ]);
     }
 
-    function is_available($host, $port, $path = '/solr/mycore'): bool
+    public static function is_available($host, $port, $path = '/solr/mycore'): bool
     {
         $url = "http://$host:$port$path";
         $ch = curl_init($url);
