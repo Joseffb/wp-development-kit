@@ -4,7 +4,7 @@ namespace WDK;
 
 class WP_Local_Search_Provider extends WP_Search_Provider
 {
-    public function search($query, $args = []): WP_Query
+    public function search($query, $args = []): \WP_Query
     {
         $query_args = array(
             's' => $query,
@@ -84,7 +84,7 @@ class WP_Local_Search_Provider extends WP_Search_Provider
             $query_args['post__in'] = !empty( $post_ids ) ? $post_ids : array(-1);
         }
 
-        return new WP_Query($query_args);
+        return new \WP_Query($query_args);
     }
 }
 
