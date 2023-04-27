@@ -43,9 +43,9 @@ class Solr_Search_Provider extends WP_Search_Provider
 
     public static function register_solr_indexing($hostname = null, $port = null, $path = null)
     {
-        $port = $port ?? defined('SOLR_PORT') ? constant('SOLR_PORT') : 8983;
-        $hostname = $hostname ?? defined('SOLR_URL') ? constant('SOLR_URL') : 'localhost';
-        $path = $path ?? defined('SOLR_CORE') ? constant('SOLR_CORE') : '/solr/mycore';
+        $port = $port ?? (defined('SOLR_PORT') ? constant('SOLR_PORT') : 8983);
+        $hostname = $hostname ?? (defined('SOLR_URL') ? constant('SOLR_URL') : 'localhost');
+        $path = $path ?? (defined('SOLR_CORE') ? constant('SOLR_CORE') : '/solr/mycore');
 
         $solr = new self($hostname, $path, $port);
         add_action('wp_insert_post', [$solr, 'add_post_to_solr']);
