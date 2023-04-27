@@ -210,8 +210,8 @@ class Solr_Search_Provider extends WP_Search_Provider
     add_filter('wdk_solr_doc_fields', 'my_custom_solr_fields', 10, 2);
 
     function my_custom_solr_fields($doc, $post) {
-        $doc->addField('custom_field', 'Custom Value');
-        return $doc;
+    $doc->addField('custom_field', 'Custom Value');
+    return $doc;
     }
      * @param $post
      * @return SolrInputDocument
