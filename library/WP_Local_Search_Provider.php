@@ -84,7 +84,42 @@ class WP_Local_Search_Provider extends WP_Search_Provider
             $query_args['post__in'] = !empty( $post_ids ) ? $post_ids : array(-1);
         }
 
-        return new \WP_Query($query_args);
+        $q = new \WP_Query($query_args);
+        $this->debug_wp_query();
+        return $q;
+    }
+
+    public function debug_wp_query($query_args ): \WP_Query
+    {
+        // Callback to capture the SQL query
+        add_filter( 'posts_request', function ( $sql, $query ) {
+            $GLOBALS['captured_sql_query'] = $sql;
+            return $sql;
+        }, 10, 2 );
+
+        // Execute the WP_Query
+        $query = new \WP_Query( $query_args );
+
+        // Remove the callback to prevent affecting other queries
+        remove_filter( 'posts_request', 'capture_sql_query', 10 );
+
+        // Output the query arguments and the SQL query
+        echo "WP_Query Arguments:\n";
+        print_r( $query_args );
+
+        echo "\nGenerated SQL Query:\n";
+        echo $GLOBALS['captured_sql_query'];
+
+        // Check for any MySQL errors
+        global $wpdb;
+        if ( $wpdb->last_error ) {
+            echo "\nMySQL Error:\n";
+            echo $wpdb->last_error;
+        } else {
+            echo "\nNo MySQL errors.";
+        }
+
+        return $query;
     }
 }
 
