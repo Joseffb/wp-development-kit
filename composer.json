@@ -36,7 +36,7 @@
     "ext-json": "*"
   },
   "suggest": {
-    "wp-graphql/wp-graphql": "As a faster and alternative to the built in wp-json and wp-query system",
+    "wp-graphql/wp-graphql": "As a faster and alternative to the built in wp-json and wp-query system"
   },
   "require-dev": {
     "roave/security-advisories": "dev-latest"
