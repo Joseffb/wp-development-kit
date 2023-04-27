@@ -25,13 +25,49 @@ class Search
     }
 
     /**
-     * @param $provider
+     * @return string|null defaults to WDK
+     */
+    private function get_calling_namespace(): ?string
+    {
+        $backtrace = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 2);
+        $caller = $backtrace[1];
+
+        if (isset($caller['class'])) {
+            try {
+                return (new \ReflectionClass($caller['class']))->getNamespaceName();
+            } catch (\ReflectionException $e) {
+                return 'WDK';
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * @param string $provider
      * @param $args
      */
-    public function __construct($provider = 'WP_Local_Search_Provider', $args = [])
+    public function __construct(string $provider = '\\WDK\\WP_Local_Search_Provider', $args = [])
     {
+        // Check if the given class exists
         if (!class_exists($provider)) {
-            throw new RuntimeException('Invalid search provider class provided: '.$provider);
+            // Check if the called_namespaced class exists
+            $callingNamespace = $this->get_calling_namespace();
+            echo "Calling namespace: " . $callingNamespace . PHP_EOL;
+            $calledNamespacedProvider = $callingNamespace . '\\' . $provider;
+
+            if (class_exists($calledNamespacedProvider)) {
+                $provider = $calledNamespacedProvider;
+            }
+            // Check if the WDK namespaced class exists
+            else {
+                $wdkNamespacedProvider = "\\WDK\\$provider";
+                if (class_exists($wdkNamespacedProvider)) {
+                    $provider = $wdkNamespacedProvider;
+                } else {
+                    throw new RuntimeException('Invalid search provider class provided: ' . $provider);
+                }
+            }
         }
 
         if (empty($args)) {
