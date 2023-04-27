@@ -2,6 +2,7 @@
 
 namespace WDK;
 
+use SolrClient;
 use Solarium\Client;
 use Solarium\QueryType\Select\Query\Query;
 
@@ -10,26 +11,30 @@ class Solr_Search_Provider extends WP_Search_Provider
 
     private string $solr_url = 'localhost';
     private ?string $solr_core = '/solr/mycore';
-    private int $solr_port = 8983;
-    private SolrClient $solr_client;
+    private string $solr_port = '8983';
+    private ?SolrClient $solr_client = null;
 
-    public function __construct(?string $solr_url = null, ?string $solr_core = null, ?int $solr_port = null)
+    public function __construct(?string $solr_url = null, ?string $solr_core = null, ?string $solr_port = null)
     {
         // Set default values if parameters are empty
-        $this->solr_url = $solr_url ?? defined('SOLR_URL') ? constant('SOLR_URL') : $this->solr_url;
-        $this->solr_core = $solr_core ?? defined('SOLR_CORE') ? constant('SOLR_CORE') : $this->solr_core;
-        $this->solr_port = $solr_port??$this->solr_port;
-
+        $this->solr_url = $solr_url ?? (defined('SOLR_URL') ? constant('SOLR_URL') : 'http://localhost:8983/solr');
+        $this->solr_core = $solr_core ?? (defined('SOLR_CORE') ? constant('SOLR_CORE') : '/solr/mycore');
+        $this->solr_port = $solr_port ?? (defined('SOLR_PORT') ? constant('SOLR_PORT') : $this->solr_port);
         // Connect to Solr
-        $this->solr_client = new SolrClient([
-            'hostname' => $this->solr_url,
-            'port' => $this->solr_port,
-            'path' => $this->solr_core,
-        ]);
+        if(class_exists('SolrClient')) {
+            $this->solr_client = new \SolrClient([
+                'hostname' => $this->solr_url,
+                'port' => $this->solr_port,
+                'path' => $this->solr_core,
+            ]);
+        }
     }
 
     public static function is_available($host, $port, $path = '/solr/mycore'): bool
     {
+        if(!class_exists('SolrClient')) {
+            return false;
+        }
         $url = "http://$host:$port$path";
         $ch = curl_init($url);
         curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 1);
@@ -43,6 +48,9 @@ class Solr_Search_Provider extends WP_Search_Provider
 
     public static function register_solr_indexing($hostname = null, $port = null, $path = null)
     {
+        if(!class_exists('SolrClient')) {
+            return false;
+        }
         $port = $port ?? (defined('SOLR_PORT') ? constant('SOLR_PORT') : 8983);
         $hostname = $hostname ?? (defined('SOLR_URL') ? constant('SOLR_URL') : 'localhost');
         $path = $path ?? (defined('SOLR_CORE') ? constant('SOLR_CORE') : '/solr/mycore');
