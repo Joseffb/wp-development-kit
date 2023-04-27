@@ -219,7 +219,7 @@ class Solr_Search_Provider extends WP_Search_Provider
     private function create_solr_document($post = null): SolrInputDocument
     {
         if (empty($post)) {
-            throw new \InvalidArgumentException('Post parameter cannot be null.');
+            throw new \RuntimeException('Post parameter cannot be null.');
         }
 
         $doc = new SolrInputDocument();

@@ -3,8 +3,7 @@
 namespace WDK;
 
 use WDK\WP_Search_Provider;
-use http\Exception\BadMethodCallException;
-use http\Exception\InvalidArgumentException;
+use RuntimeException;
 
 class Search
 {
@@ -22,7 +21,7 @@ class Search
             return call_user_func_array([$this->search_provider, $method], $arguments);
         }
 
-        throw new BadMethodCallException("'$method' does not exist in the current search provider", 10403);
+        throw new RuntimeException("'$method' does not exist in the current search provider", 10403);
     }
 
     /**
@@ -32,7 +31,7 @@ class Search
     public function __construct($provider = 'WP_Local_Search_Provider', $args = [])
     {
         if (!class_exists($provider)) {
-            throw new InvalidArgumentException('Invalid search provider class provided.');
+            throw new RuntimeException('Invalid search provider class provided.');
         }
 
         if (empty($args)) {
@@ -62,11 +61,11 @@ class Search
     {
         if (is_string($search_provider)) {
             if (!class_exists($search_provider)) {
-                throw new InvalidArgumentException('Invalid search provider class provided.');
+                throw new RuntimeException('Invalid search provider class provided.');
             }
 
             if (!is_subclass_of($search_provider, WP_Search_Provider::class)) {
-                throw new InvalidArgumentException('Search provider class must extend WP_Search_Provider.');
+                throw new RuntimeException('Search provider class must extend WP_Search_Provider.');
             }
 
             if (!empty($args)) {
@@ -77,7 +76,7 @@ class Search
         } elseif ($search_provider instanceof WP_Search_Provider) {
             $this->search_provider = $search_provider;
         } else {
-            throw new InvalidArgumentException('Invalid search provider type provided. Must be a class name or an instance of WP_Search_Provider.');
+            throw new RuntimeException('Invalid search provider type provided. Must be a class name or an instance of WP_Search_Provider.');
         }
     }
 

@@ -3,8 +3,6 @@
 namespace WDK;
 
 use WDK\Payment_Provider;
-use http\Exception\BadMethodCallException;
-use http\Exception\InvalidArgumentException;
 
 class Payments
 {
@@ -17,13 +15,13 @@ class Payments
             return call_user_func_array([$this->payment_provider, $method], $arguments);
         }
 
-        throw new BadMethodCallException("'$method' does not exist in the current payment provider", 10403);
+        throw new \RuntimeException("'$method' does not exist in the current payment provider", 10403);
     }
 
     public function __construct($provider = 'PayPal_Rest_API_Provider', $args = [])
     {
         if (!class_exists($provider)) {
-            throw new InvalidArgumentException('Invalid payment provider class provided.');
+            throw new \RuntimeException('Invalid payment provider class provided.');
         }
 
         if (empty($args)) {
@@ -48,11 +46,11 @@ class Payments
     {
         if (is_string($payment_provider)) {
             if (!class_exists($payment_provider)) {
-                throw new InvalidArgumentException('Invalid payment provider class provided.');
+                throw new \RuntimeException('Invalid payment provider class provided.');
             }
 
             if (!is_subclass_of($payment_provider, Payment_Provider::class)) {
-                throw new InvalidArgumentException('Payment provider class must extend Payment_Provider.');
+                throw new \RuntimeException('Payment provider class must extend Payment_Provider.');
             }
 
             if(!empty($args)) {
@@ -63,7 +61,7 @@ class Payments
         } elseif ($payment_provider instanceof Payment_Provider) {
             $this->payment_provider = $payment_provider;
         } else {
-            throw new InvalidArgumentException('Invalid payment provider type provided. Must be a class name or an instance of Payment_Provider.');
+            throw new \RuntimeException('Invalid payment provider type provided. Must be a class name or an instance of Payment_Provider.');
         }
     }
 }

@@ -252,7 +252,7 @@ class GraphQL_Search_Provider extends WP_Search_Provider
     public function __construct(array $fields = [])
     {
         if (!class_exists('GRAPHQLWP\GRAPHQLWP')) {
-            throw new \BadMethodCallException('GraphQLWP plugin is not installed.');
+            throw new \RuntimeException('GraphQLWP plugin is not installed.');
         }
         $this->graphql = new GRAPHQLWP();
         $this->fields = $this->build_fields($fields);
