@@ -39,8 +39,7 @@ class WP_Local_Search_Provider extends WP_Search_Provider
             remove_filter('posts_request', 'capture_sql_query', 10);
 
             // Output the query arguments and the SQL query
-            echo "WP_Query Arguments:\n";
-            Utility::Log($query_args);
+            Utility::Log($query_args,"WP_Query Arguments:");
 
             Utility::Log($GLOBALS['captured_sql_query'], "Generated SQL Query:");
 
