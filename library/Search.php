@@ -31,7 +31,7 @@ class Search
     public function __construct($provider = 'WP_Local_Search_Provider', $args = [])
     {
         if (!class_exists($provider)) {
-            throw new RuntimeException('Invalid search provider class provided.');
+            throw new RuntimeException('Invalid search provider class provided: '.$provider);
         }
 
         if (empty($args)) {
