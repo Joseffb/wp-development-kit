@@ -58,7 +58,7 @@ class Search
             // Check if the called_namespaced class exists
             else {
                 $callingNamespace = $this->get_calling_namespace();
-                echo "Calling namespace: " . $callingNamespace . PHP_EOL;
+                //echo "Calling namespace: " . $callingNamespace . PHP_EOL;
                 $calledNamespacedProvider = $callingNamespace . '\\' . $provider;
 
                 if (class_exists($calledNamespacedProvider)) {
