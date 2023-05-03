@@ -1,5 +1,5 @@
 <?php
-namespace MLA\Search;
+namespace WDK;
 use WDK\Search;
 use WDK\WP_Search_Provider;
 
