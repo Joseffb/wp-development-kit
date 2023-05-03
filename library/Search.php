@@ -2,7 +2,6 @@
 
 namespace WDK;
 
-use WDK\WP_Search_Provider;
 use RuntimeException;
 
 class Search
@@ -51,19 +50,19 @@ class Search
     {
         // Check if the given class exists
         if (!class_exists($provider)) {
-            // Check if the called_namespaced class exists
-            $callingNamespace = $this->get_calling_namespace();
-            echo "Calling namespace: " . $callingNamespace . PHP_EOL;
-            $calledNamespacedProvider = $callingNamespace . '\\' . $provider;
-
-            if (class_exists($calledNamespacedProvider)) {
-                $provider = $calledNamespacedProvider;
-            }
             // Check if the WDK namespaced class exists
+            $wdkNamespacedProvider = "\\WDK\\$provider";
+            if (class_exists($wdkNamespacedProvider)) {
+                $provider = $wdkNamespacedProvider;
+            }
+            // Check if the called_namespaced class exists
             else {
-                $wdkNamespacedProvider = "\\WDK\\$provider";
-                if (class_exists($wdkNamespacedProvider)) {
-                    $provider = $wdkNamespacedProvider;
+                $callingNamespace = $this->get_calling_namespace();
+                echo "Calling namespace: " . $callingNamespace . PHP_EOL;
+                $calledNamespacedProvider = $callingNamespace . '\\' . $provider;
+
+                if (class_exists($calledNamespacedProvider)) {
+                    $provider = $calledNamespacedProvider;
                 } else {
                     throw new RuntimeException('Invalid search provider class provided: ' . $provider);
                 }
