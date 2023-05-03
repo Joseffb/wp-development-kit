@@ -1,7 +1,5 @@
 <?php
 namespace WDK;
-use WDK\Search;
-use WDK\WP_Search_Provider;
 
 class AWS_Elastic_Search_Provider extends WP_Search_Provider {
 
