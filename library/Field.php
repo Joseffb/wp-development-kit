@@ -23,10 +23,10 @@ class Field
      * @param bool $is_update
      * @return bool|int
      */
-    public static function WriteToField($post_id, $field_name, $field_value, $unique = true, $old_value = '', $is_update = false)
+    public static function WriteToField($post_id, $field_name, $field_value, bool $unique = true, string $old_value = '', bool $is_update = false)
     {
         //todo add permission check
-        if ($retVal = add_post_meta($post_id, $field_name, $field_value, $unique) === false) {
+        if ($retVal = (add_post_meta($post_id, $field_name, $field_value, $unique) === false)) {
             $retVal = update_post_meta($post_id, $field_name, $field_value, $old_value);
         }
 
@@ -140,12 +140,12 @@ class Field
         }, 1000);
 
         // todo: check permissions to see if user has read permission.
-        if (empty($fieldObj['show_on_admin']) || Check::IsTrue($fieldObj['show_on_admin'])) {
+        if (empty($fieldObj['show_on_admin']) || Utility::IsTrue($fieldObj['show_on_admin'])) {
             add_action('add_meta_boxes', function () use ($context, $priority, $pt, $id, $label, $type, $options, $fieldObj) {
                 add_meta_box(
                     'meta_box_' . $id,
                     $label,
-                    function ($post) use ($id, $label, $type, $options) {
+                    static function ($post) use ($id, $label, $type, $options) {
                         wp_nonce_field('my_meta_box_nonce', 'meta_box_nonce');
                         echo self::CreateField($id, $id, $label, $type, $options, $post);
                     },
@@ -170,7 +170,7 @@ class Field
      * @param bool $values
      * @return string
      */
-    public static function CreateField($field_id, $field_name, $label, $type, $options, \WP_Post $post = null, $values = false)
+    public static function CreateField($field_id, $field_name, $label, $type, $options, \WP_Post $post = null, bool $values = false): string
     {
         $class = '';
         if (!empty($options['classes'])) {
@@ -222,7 +222,7 @@ class Field
                     foreach ($selected as $k) {
                         //error_log(print_r($k, true));
                         if (is_serialized($k)) {
-                            $k = unserialize($k);
+                            $k = unserialize($k, ['allowed_classes' => true]);
                             //error_log(is_array($k));
                             if (is_array($k)) {
                                 foreach ($k as $kk) {
@@ -365,10 +365,10 @@ class Field
             case 'search':
             case 'week':
             default:
-            $placeholder = !empty($options['placeholder'])?$options['placeholder']:'';
-            $label_class = str_replace('label-', '', $class);
-            $textbox_class = str_replace('textbox-', '', $class);
-            $div_class = str_replace('div-', '', $class);
+                $placeholder = !empty($options['placeholder'])?$options['placeholder']:'';
+                $label_class = str_replace('label-', '', $class);
+                $textbox_class = str_replace('textbox-', '', $class);
+                $div_class = str_replace('div-', '', $class);
                 $html = "<div class='$div_class'>
                                         <label class='$label_class label input-label $type' for='$field_id'>$label</label><br/>
                                        <input class='$textbox_class input $type-label'  id='$field_id' type='$type' name='$field_name' value='$selected' placeholder='$placeholder'/></div>";
