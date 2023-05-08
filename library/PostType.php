@@ -41,7 +41,7 @@ class PostType
 
             if(!empty($args['use_twig'])) {
                 delete_option("wdk_process_template_cpt_$post_type_name"); //removes old data entries.
-                update_option("wdk_process_template_cpt_$post_type_name", true);
+                update_option("wdk_process_template_cpt_$post_type_name", $args['use_twig']);
             }
             //Version 0.0.10 changes related_cpt for shadow_in_cpt which is a more accurate name.
             $shadow_cpt = $args['related_cpt'] ?? $args['shadow_in_cpt'];

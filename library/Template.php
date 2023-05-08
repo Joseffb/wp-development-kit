@@ -75,9 +75,11 @@ class Template
                 $base = $template_getter;
                 switch ($base) {
                     case 'single':
+                        Utility::Log('wdk_process_template_cpt_' . $post->post_type);
                         $post_type_check = get_option('wdk_process_template_cpt_' . $post->post_type); //run a twig template for the CPT archive page.
-                        if ($post_type_check) {
-                            if ($post_type_check !== 'true') {
+                        Utility::Log($post_type_check);
+                        if (!empty($post_type_check)) {
+                            if (!Utility::IsTrue($post_type_check) ) {
                                 $template = $post_type_check;
                             }
                             $template = self::handle_single($post, $template, $base);
@@ -88,7 +90,7 @@ class Template
                     case 'page':
                         //check to run a Twig template on a specific page. set in functions file via update_post_meta($post_id, "process_template_page_PAGESLUG", true)
                         $page_check = get_post_meta($post->ID, 'process_template_page_' . $post->post_name, true);
-                        if ($page_check) {
+                        if (!empty($page_check)) {
                             if ($page_check !== 'true') {
                                 $template = $page_check;
                             }
@@ -104,7 +106,7 @@ class Template
                         $taxonomy_name_check = get_option('wdk_process_template_tax_' . $taxonomy_name);
                         //checks if we should use a specific Twig template for a specific term in a specific taxonomy
                         $taxonomy_id_check = get_option('wdk_process_template_tax_' . $taxonomy_name . "_" . $term_name);
-                        if ($taxonomy_name_check || $taxonomy_id_check) {
+                        if (!Utility::IsTrue($taxonomy_name_check) || !Utility::IsTrue($taxonomy_id_check)) {
                             if ($taxonomy_name_check !== 'true') {
                                 $template = $taxonomy_name_check;
                             }
@@ -121,7 +123,7 @@ class Template
                         $tag_check = get_option('wdk_process_template_tag');
                         //checks if we should use a Twig template for all tags.
                         $tag_name_check = get_option('wdk_process_template_tag_term_' . $tag_name);
-                        if ($tag_check || $tag_name_check) {
+                        if (!Utility::IsTrue($tag_check) || !Utility::IsTrue($tag_name_check)) {
                             if ($tag_check !== 'true') {
                                 $template = $tag_check;
                             }
@@ -139,7 +141,7 @@ class Template
                         $category_check = get_option('wdk_process_template_tax_category');
                         //checks if we should use a specific Twig template for a specific term in a specific the default 'category' taxonomy
                         $category_name_check = get_option('wdk_process_template_tax_category_' . $cat_name);
-                        if ($category_check || $category_name_check) {
+                        if (!Utility::IsTrue($category_check) || !Utility::IsTrue($category_name_check)) {
                             if ($category_check !== 'true') {
                                 $template = $category_check;
                             }
@@ -240,8 +242,15 @@ class Template
     }
 
     //Note: these handle_X methods work as LIFO stacks for Twig render
-    private static function handle_single($post, $template, $base)
+    private static function handle_single($post, $template = false, $base): array
     {
+        if(!is_array($template)) {
+            $submit_template = $template;
+            $template = ["single.twig","index.twig","base.twig"];
+            if(!is_int((int)$submit_template)) {
+                array_unshift($template , "$submit_template.twig");
+            }
+        }
         if (post_password_required($post->ID)) :
             array_splice($template, 0, 0, [
                 $base . "-password" . self::$ext,
@@ -249,6 +258,7 @@ class Template
         else:
             $cats = wp_get_post_categories($post->ID, ['orderby' => 'term_order']);
             $parent_cat = !empty($cats[0]) ? get_category_parents($cats[0]) : false;
+            Utility::Log($template);
             array_splice($template, 0, 0, [
                 $base . self::$ext,
             ]);
