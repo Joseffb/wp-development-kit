@@ -293,4 +293,41 @@ class Utility
         // If it exist, check if it's a directory
         return ($path !== false AND is_dir($path)) ? $path : false;
     }
+
+    public static function IsGutenbergEnabled($check_current_screen = false): bool
+    {
+        $gutenberg    = false;
+        $block_editor = false;
+
+        if($check_current_screen) {
+            if( ! function_exists( 'get_current_screen' ) ) {
+                return false;
+            }
+
+            $screen = get_current_screen();
+            return $screen->is_block_editor;
+        }
+
+        if ( has_filter( 'replace_editor', 'gutenberg_init' ) ) {
+            // Gutenberg is installed and activated.
+            $gutenberg = true;
+        }
+
+        if ( version_compare( $GLOBALS['wp_version'], '5.0-beta', '>' ) ) {
+            // Block editor.
+            $block_editor = true;
+        }
+
+        if ( ! $gutenberg && ! $block_editor ) {
+            return false;
+        }
+
+        include_once ABSPATH . 'wp-admin/includes/plugin.php';
+
+        if ( ! is_plugin_active( 'classic-editor/classic-editor.php' ) ) {
+            return true;
+        }
+
+        return get_option( 'classic-editor-replace' ) === 'no-replace';
+    }
 }
