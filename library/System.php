@@ -18,7 +18,6 @@ class System
     {
         $trace = debug_backtrace();
         $call_path_dir = dirname($trace[0]['file']);
-        //Utility::Log($call_path_dir, 'call_path');
         if (!defined('WDK_CONFIG_BASE')) {
             if (is_dir($call_path_dir . "/wdk/configs")) {
                 define("WDK_CONFIG_BASE", $call_path_dir . "/wdk/configs");
@@ -84,9 +83,7 @@ class System
      */
     public static function Setup($dir = null)
     {
-        //$config_files = get_stylesheet_directory() . '/app/Config';
         $config_files = WDK_CONFIG_BASE;
-        //Utility::Log($config_files, 'setup directory to find.');
         if (Utility::IsDirEmpty($config_files)) {
             $config_files = get_template_directory();
         }
@@ -163,7 +160,6 @@ class System
             if (!empty($config)) {
                 $name = $term_name = $config['name'];
                 if (!empty($config['rewrite']['slug'])) {
-                    //Log::Write($config['rewrite']['slug']);
                     $name = ['human' => $name, 'slug' => $config['rewrite']['slug']];
                 }
                 $post_types = !empty($config['post_types']) ? $config['post_types'] : array("post");
@@ -227,7 +223,6 @@ class System
      */
     public static function ProcessWidgets($config_file): void
     {
-        //Log::WriteLog('Inside Widget installer');
         foreach ($config_file as $config) {
             if (!empty($config)) {
                 Widget::CreateCustomWidget($config['callback']);

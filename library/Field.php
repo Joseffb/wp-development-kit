@@ -1,6 +1,9 @@
 <?php
 
 namespace WDK;
+
+use PhpMyAdmin\Util;
+
 /**
  * Class Field - Field input generator and tools
  * @package WDK\Library\Field
@@ -93,7 +96,7 @@ class Field
             // Bail if we're doing an auto save
             if (defined('DOING_AUTOSAVE') && DOING_AUTOSAVE) return;
             // if our nonce isn't there, or we can't verify it, bail
-            if (empty($_POST['meta_box_nonce']) || !wp_verify_nonce($_POST['meta_box_nonce'], 'my_meta_box_nonce')) return;
+            if (empty($_POST["{$id}_meta_box_nonce"]) || !wp_verify_nonce($_POST["{$id}_meta_box_nonce"], "{$id}_meta_box_nonce")) return;
             // if our current user can't edit this post, bail
             if (!current_user_can('edit_post')) return;
             //no data field, bail
@@ -128,7 +131,7 @@ class Field
             if (is_array($save_value)) {
                 delete_post_meta($post_id, $id);
                 foreach ($_POST[$id] as $v) {
-                    Log::Write($_POST[$id] );
+//                    Log::Write($_POST[$id]);
                     update_post_meta($post_id, $id, $v);
                 }
                 return;
@@ -139,28 +142,31 @@ class Field
 
         }, 1000);
 
-        // todo: check permissions to see if user has read permission.
-        if (empty($fieldObj['show_on_admin']) || Utility::IsTrue($fieldObj['show_on_admin'])) {
-            add_action('add_meta_boxes', function () use ($context, $priority, $pt, $id, $label, $type, $options, $fieldObj) {
-                add_meta_box(
-                    'meta_box_' . $id,
-                    $label,
-                    static function ($post) use ($id, $label, $type, $options) {
-                        wp_nonce_field('my_meta_box_nonce', 'meta_box_nonce');
-                        echo self::CreateField($id, $id, $label, $type, $options, $post);
-                    },
-                    $pt,
-                    $context,
-                    $priority);
-            });
+        $processed_fields = array();
+        // option to show or hide the metabox from json config. blank ot truish answer will show it.
+        $test = $pt."_".$id;
+        if (!in_array($test, $processed_fields, true)) {
+            if ((bool)$fieldObj['show_on_admin'] !== false || Utility::IsTrue($fieldObj['show_on_admin'])) {
+                if (!Utility::IsGutenbergEnabled()) {
+                } else {
+                    add_action('add_meta_boxes', function () use ($context, $priority, $pt, $id, $label, $type, $options, $fieldObj) {
+                        add_meta_box(
+                            'meta_box_' . $id,
+                            $label,
+                            static function ($post) use ($id, $label, $type, $options) {
+                                wp_nonce_field("{$id}_meta_box_nonce", "{$id}_meta_box_nonce");
+                                echo self::CreateField($id, $id, $label, $type, $options, $post);
+                            },
+                            $pt,
+                            $context,
+                            $priority);
+                    });
+                }
+            }   $processed_fields[] = $test;
         }
-
-
     }
-
     /**
      * Used to create an input field for the meta data based field in the db.
-     * Todo: make a function for each case type.
      * @param $field_id
      * @param $field_name
      * @param $label
@@ -176,9 +182,9 @@ class Field
         if (!empty($options['classes'])) {
             $class = implode(" ", (array)$options['classes']);
         }
-
+        $pt = $options['post_type'] ?? ($post ? get_post_type($post) : 'post');
         // Manage existing values here.
-        $values = !empty($post) ?self::ReadFromField(get_the_ID(), $field_id): $values;
+        $values = $post !== null ? self::ReadFromField(get_the_ID(), $field_id) : $values;
         $selected = !empty($values) ? $values : '';
         //Log::Write($selected);
 
@@ -245,19 +251,19 @@ class Field
                 break;
             case 'select':
             case 'list':
-                if($type === 'select') {
+                if ($type === 'select') {
                     $name = $field_name;
                 } else {
-                    $name = $field_name.'[]';
+                    $name = $field_name . '[]';
                 }
                 $is_list = $type === 'list' ? 'size="5" multiple' : '';
-                $html = "<div class='$class'><label for='$field_id'>$label</label><select class='col $type' id='$field_id' name='".$name."' $is_list>";
+                $html = "<div class='$class'><label for='$field_id'>$label</label><select class='col $type' id='$field_id' name='" . $name . "' $is_list>";
                 if (!empty($options['values']) && is_array($options['values'])) {
                     //Log::Write($options['values']);
                     foreach ($options['values'] as $k => $v) {
                         //Log::Write($k);
                         //Log::Write($v);
-                        $s = in_array($v, (array) $selected) ? 'selected="selected"':'';
+                        $s = in_array($v, (array)$selected, true) ? 'selected="selected"' : '';
                         $html .= "<option class='$class option-$type' value='$v' $s>$k</option>.";
                     }
                 }
@@ -265,15 +271,16 @@ class Field
                 break;
             case 'radio':
             case 'checkbox':
-                if($type === 'radio') {
+                if ($type === 'radio') {
                     $radio_inline = 'radio-inline ml-2';
                     $name = $field_name;
                 } else {
                     $radio_inline = '';
-                    $name = $field_name.'[]';
+                    $name = $field_name . '[]';
                 }
-                $html = "";
+                $html = "<label class='col-12'>no values defined</label>";
                 if (!empty($options['values']) && is_array($options['values'])) {
+                    $html = "";
 
                     if (!empty($label)) {
                         $html .= "<label class='col-12' for='$field_id'>$label</label>";
@@ -313,17 +320,17 @@ class Field
                         $lbl = $k;
                         $image_class = '';
                         //Log::Write($v, "Notice:");
-                        if(is_array($v)) {
+                        if (is_array($v)) {
                             // these are the special radio buttons that use images instead of buttons.
                             $image_class = "use-images";
-                            $lbl ="<img class='image col' src='".$v['image']."'>";
+                            $lbl = "<img class='image col' src='" . $v['image'] . "'>";
                             $v = $v['value'];
                         }
 
-                        $s = in_array($v, (array) $selected) ? 'checked':'';
-                        $div_class = str_replace('div-','', $class );
-                        $html .= $type === 'checkbox'?"<div class='$div_class wrapper'>":'';
-                        $label_class = str_replace('label-','', $class );
+                        $s = in_array($v, (array)$selected, true) ? 'checked' : '';
+                        $div_class = str_replace('div-', '', $class);
+                        $html .= $type === 'checkbox' ? "<div class='$div_class wrapper'>" : '';
+                        $label_class = str_replace('label-', '', $class);
                         $input_class = str_replace('input-', '', $class);
                         $html .= "
                                         <label class='col $label_class label radio-check-label $type-label $radio_inline' for='$field_id-$cnt'>
@@ -334,7 +341,7 @@ class Field
                                             value='$v' $s> $lbl
                                        </label>
                                  ";
-                        $html .= $type === 'checkbox'?"</div>":'';
+                        $html .= $type === 'checkbox' ? "</div>" : '';
                         $cnt++;
                     }
                 }
@@ -365,7 +372,7 @@ class Field
             case 'search':
             case 'week':
             default:
-                $placeholder = !empty($options['placeholder'])?$options['placeholder']:'';
+                $placeholder = !empty($options['placeholder']) ? $options['placeholder'] : '';
                 $label_class = str_replace('label-', '', $class);
                 $textbox_class = str_replace('textbox-', '', $class);
                 $div_class = str_replace('div-', '', $class);
@@ -381,7 +388,7 @@ class Field
      * Used to register sortable custom field columns based on a CPT index page. (not filterable)
      * @param $field
      * @param $post_type
-     * @param bool $location
+     * @param array $location
      */
     public static function AddFieldToPostAdminColumns($field, $post_type, array $location = []): void
     {
