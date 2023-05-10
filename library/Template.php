@@ -89,7 +89,7 @@ class Template
                         break;
                     case 'page':
                         //check to run a Twig template on a specific page. set in functions file via update_post_meta($post_id, "process_template_page_PAGESLUG", true)
-                        $page_check = get_post_meta($post->ID, 'process_template_page_' . $post->post_name, true);
+                        $page_check = get_post_meta($post->ID, 'wdk_process_template_page_' . $post->post_name, true);
                         if (!empty($page_check)) {
                             if ($page_check !== 'true') {
                                 $template = $page_check;
@@ -175,13 +175,13 @@ class Template
         if (class_exists(Timber::class)) {
             //add global context values for Timber
             add_filter('timber/context', static function () {
+                $show_templates = get_option('wdk_debug_show_templates');
                 Utility::Log('inside context hook');
                 //$start = Helper::start_timer();
                 $context = Timber::context();
                 $context['page-template'] = $templates = self::get_template();
                 if (!empty($templates) && is_array($templates)) {
                     $context['post'] = new Post();
-                    $show_templates = get_option('wdk_debug_show_templates');
                     if (WP_DEBUG || $show_templates) {
                         $context_hooks = [];
                     }
