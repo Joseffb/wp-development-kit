@@ -2,7 +2,7 @@
   "name": "joseffb/wp-developer-kit",
   "description": "A development library to make creating things in wordpress a lot easier.",
   "license": "MIT",
-  "version": "0.0.33",
+  "version": "0.0.34",
   "keywords": [
     "WordPress",
     "WordPress Plugin",
@@ -33,7 +33,10 @@
     "timber/timber": "^1.22.1"
   },
   "suggest": {
-    "wp-graphql/wp-graphql": "As a faster and alternative to the built in wp-json and wp-query system"
+    "wp-graphql/wp-graphql": "As a faster and alternative to the built in wp-json and wp-query system",
+    "aws/aws-sdk-php": "3.*",
+    "elasticsearch/elasticsearch": "8.7.x-dev",
+    "solarium/solarium": "^6.2.8"
   },
   "require-dev": {
     "roave/security-advisories": "dev-latest"
