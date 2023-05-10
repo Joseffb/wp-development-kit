@@ -330,4 +330,30 @@ class Utility
 
         return get_option( 'classic-editor-replace' ) === 'no-replace';
     }
+
+    /**
+     * Returns a random item from the given array of items, based on the provided drop rates.
+     *
+     * @param array $items The array of items to choose from.
+     * @param array $drop_rates The array of drop rates, corresponding to each item.
+     * @return false|string The randomly chosen item.
+     *
+     * @throws \Exception
+     * @example
+     * $items = array("Sword", "Bow", "Axe", "Staff");
+     * $drop_rates = array(0.4, 0.3, 0.2, 0.1);
+     * $weapon = weighted_random($items, $drop_rates);
+     * echo "You received a {$weapon}!";
+     */
+    public static function weighted_random(array $items, array $drop_rates) {
+        $weighted_items = array_combine($items, $drop_rates);
+        $rand = random_int(0, array_sum($drop_rates) * 100) / 100;
+        foreach ($weighted_items as $item => $weight) {
+            if ($rand < $weight) {
+                return $item;
+            }
+            $rand -= $weight;
+        }
+        return false;
+    }
 }
