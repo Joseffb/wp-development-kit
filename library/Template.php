@@ -79,7 +79,7 @@ class Template
                         $post_type_check = get_option('wdk_process_template_cpt_' . $post->post_type); //run a twig template for the CPT archive page.
                         Utility::Log($post_type_check);
                         if (!empty($post_type_check)) {
-                            if (!Utility::IsTrue($post_type_check) ) {
+                            if (!Utility::IsTrue($post_type_check)) {
                                 $template = $post_type_check;
                             }
                             $template = self::handle_single($post, $template, $base);
@@ -89,11 +89,18 @@ class Template
                         break;
                     case 'page':
                         //check to run a Twig template on a specific page. set in functions file via update_post_meta($post_id, "process_template_page_PAGESLUG", true)
-                        $page_check = get_post_meta($post->ID, 'wdk_process_template_page_' . $post->post_name, true);
-                        if (!empty($page_check)) {
-                            if ($page_check !== 'true') {
-                                $template = $page_check;
+                        //Utility::Log($post);
+                        $post_type_check = get_option('wdk_process_template_page_' . $post->post_name); //run a twig template for the CPT archive page.
+                        //Utility::Log($post_type_check);
+                        $page_specific_check = get_post_meta($post->ID, 'wdk_process_template_page_' . $post->post_name, true);
+                        $template_check = !empty($page_specific_check) ? $page_specific_check : $post_type_check;
+                        Utility::Log($template_check);
+                        if (!empty($template_check)) {
+                            Utility::Log($template_check);
+                            if (!is_bool($template_check)) {
+                                $template = $template_check;
                             }
+                            Utility::Log($template);
                             $template = self::handle_page($post, $template, $base);
                         } else {
                             return false;
@@ -194,6 +201,7 @@ class Template
                     }
                     if (WP_DEBUG || $show_templates) {
                         Utility::Log($context_hooks, 'Debug Only Message::Twig Template Context Hooks');
+                        Utility::Log($templates, 'Debug Only Message::Twig Template Context Hooks');
                     }
                 } else {
                     if (WP_DEBUG || $show_templates) {
@@ -242,13 +250,21 @@ class Template
     }
 
     //Note: these handle_X methods work as LIFO stacks for Twig render
-    private static function handle_single($post, $template = false, $base): array
+
+    /**
+     * @param $post
+     * @param mixed $template
+     * @param $base
+     * @return array|string[]
+     */
+    private static function handle_single($post, $template = [], $base = 'single'): array
     {
-        if(!is_array($template)) {
+        if (empty($template) || !is_array($template)) {
             $submit_template = $template;
-            $template = ["single.twig","index.twig","base.twig"];
-            if(!is_int((int)$submit_template)) {
-                array_unshift($template , "$submit_template.twig");
+            $template = ["index.twig", $base . self::$ext];
+            if (!is_int((int)$submit_template)) {
+                $submit_template = str_replace(self::$ext, "", $submit_template);
+                array_unshift($template, $submit_template . self::$ext);
             }
         }
         if (post_password_required($post->ID)) :
@@ -292,8 +308,20 @@ class Template
         return $template;
     }
 
-    private static function handle_page($page, $template, $base)
+    /**
+     * @param $page
+     * @param mixed $template
+     * @param $base
+     * @return array|string[]
+     */
+    private static function handle_page($page, $template = [], $base = 'page'): array
     {
+        $override_template = false;
+        if (empty($template) || !is_array($template)) {
+            $override_template = $template;
+            $template = ["index.twig", "base.twig"];
+        }
+
         $page_name = get_query_var('page_name') ?: $page->post_name;
         $url = strtok($_SERVER['REQUEST_URI'], '?'); //no url parameters for template selection.
         $slug = str_replace(['-', "/", "%20"], ["_", "--", "-"], substr($url, 1, -1));
@@ -313,6 +341,10 @@ class Template
             array_splice($template, 0, 0, [
                 $base . "-" . $slug . self::$ext,
             ]);
+        }
+        if (!empty($override_template) && !is_int($override_template)) {
+            $override_template = str_replace(self::$ext, "", $override_template);
+            array_unshift($template, $override_template . self::$ext);
         }
 
 
