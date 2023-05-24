@@ -1,9 +1,6 @@
 <?php
 
 namespace WDK;
-
-use \WP_Query;
-
 /**
  * The `Hive` class is a static utility class for querying WordPress posts, and provides a convenient way to access
  * post data and related metadata and taxonomies.
@@ -11,7 +8,7 @@ use \WP_Query;
  * Usage:
  * - Get a post by ID: `$post = Hive::post_name(123);`
  * - Get a post by name: `$post = Hive::post_name('example-post');`
- * - Get a post by shadow taxonomy: `$post = Hive::post_name(['shadow_tax' => 'taxonomy_name', 'shadow_term' => 'term_name']);`
+ * - Get a post by shadow taxonomy: `$post = Hive::post_name(['shadow_term_id' => 1234]);`
  * - Get a post with specific meta value: `$post = Hive::post_name(['meta' => ['meta_key' => 'meta_value']]);`
  *
  * Once you have a post, you can access its data using the following properties:
@@ -40,44 +37,42 @@ use \WP_Query;
  * $post = Hive::post('example-post');
  * $excerpt = $post->post->post_excerpt;
  *
- * // Get a post by shadow taxonomy
- * $post = Hive::custom_post_name(['shadow_tax' => '1234']);
+ * // Get a post by associated shadow's term id
+ * $post = Hive::custom_post_type_name(['shadow_term_id' => '1234']);
  *
  * // Get a post with specific meta value
  * $books = Hive::books(['meta' => ['_sku' => 'abc123']]);
  *
  * // Update a meta value for a post
- * $post = Hive::post_name(123);
+ * $post = Hive::post_type_name(123);
  * $post->update->meta('_price', 19.99);
  *
  * // Update a taxonomy term for a post
- * $post = Hive::post_name(123);
+ * $post = Hive::post_type_name(123);
  * $post->update->taxonomy('category', 'Widgets', ['description' => 'Product category']);
  *
  * // Update the post itself
- * $post = Hive::post_name(123);
+ * $post = Hive::post_type_name(123);
  * $post->update->post(['post_title' => 'New Title']);
  *
  * // Delete the post from the database
- * $post = Hive::post_name(42);
+ * $post = Hive::post_type_name(42);
  * $post->delete->post();
  *
  * // Delete a post taxonomy from the database
- * $post = Hive::post_name(42);
+ * $post = Hive::post_type_name(42);
  * $post->delete->taxonomy('Category', 'value');
  *
  * // Delete a post meta from the database
- * $post = Hive::post_name(42);
+ * $post = Hive::post_type_name(42);
  * $post->delete->meta('custom_field_name');
  */
 class Hive
 {
     private array $query_args = [];
 
-    public static function __callStatic($name, $arguments)
+    public static function __callStatic($post_type, $arguments)
     {
-        $post_type = $name;
-
         if (!post_type_exists($post_type)) {
             return null;
         }
@@ -89,12 +84,15 @@ class Hive
             $hive->id($args);
         } elseif (is_string($args)) {
             $hive->name($args);
-        } elseif (isset($args['shadow_tax'], $args['shadow_term']) && is_array($args)) {
-            $hive->shadow($args['shadow_tax'], $args['shadow_term']);
-        }
-
-        if (isset($args['meta']) && is_array($args['meta'])) {
-            $hive->meta($args['meta']);
+        } elseif (is_array($args)) {
+            $hive->query_args = $args;
+            if (isset($args['shadow_term_id'])) {
+                $hive->shadow($args['shadow_term_id']);
+                unset($hive->query_args['shadow_term_id']);
+            } else if (isset($args['meta']) && is_array($args['meta'])) {
+                $hive->meta($args['meta']);
+                unset($hive->query_args['meta']);
+            }
         }
 
         return $hive->get();
@@ -155,13 +153,18 @@ class Hive
         // Get taxonomy data
         $taxonomies = get_object_taxonomies($post->post_type);
         $taxonomy_data = [];
+        $shadow_id = Shadow::GetAssociatedTermID($post);
+        $shadow_term = $shadow_id ? get_term($shadow_id) : null;
         foreach ($taxonomies as $taxonomy) {
             $taxonomy_data[$taxonomy] = get_the_terms($post->ID, $taxonomy);
+        }
+        if(!empty($taxonomy_data[$shadow_term->name])) {
+            $taxonomy_data['shadow'] = [$taxonomy_data[$shadow_term] ?? null];
+            unset($taxonomy_data[$shadow_term->name]);
         }
         return (object)[
             'post' => $post,
             'meta' => $meta,
-            'shadow_tax' => Shadow::GetAssociatedTermID($post),
             'taxonomies' => $taxonomy_data,
             'update' => [
                 'post' => function ($args) use ($post) {
