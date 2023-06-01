@@ -242,6 +242,12 @@ class Hive
                     return $this->get_by_mime_type('application/rar');
                 }
 
+                /**
+                 * Wildcard version of get_by_mime_type. requires the front half of the entire mime type returning all
+                 * subtypes in that hierarchy. i.e. 'application' returns all application types.
+                 * @param $mime_type
+                 * @return array
+                 */
                 private function get_by_mime_type_wildcard($mime_type): array
                 {
                     $sql = $this->wpdb->prepare(
@@ -257,6 +263,11 @@ class Hive
                     return $this->wpdb->get_results($sql);
                 }
 
+                /**
+                 * Returns specific mime type as defined by type/subtype. i.e. 'image/jpg' will only return all jpegs.
+                 * @param $mime_type
+                 * @return array
+                 */
                 private function get_by_mime_type($mime_type): array
                 {
                     $args = array(
