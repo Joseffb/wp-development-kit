@@ -33,6 +33,15 @@ namespace WDK;
  * * //get a specific meta value from the pulled post:
  * $featured = $post->meta['_featured'][0];
  *
+ * //Get shadow data
+ * $post = Hive::post(42);
+ * $shadow_term_data = $post[taxonomy]['shadows']['shadow_name']['taxonomy'];
+ * $shadow_post_data = $post[taxonomy]['shadows']['shadow_name']['post']->load();
+ *
+ * // Get a post by title
+ * $post = Hive::post('example post');
+ * $excerpt = $post->post->post_excerpt;
+ *
  * // Get a post by name
  * $post = Hive::post('example-post');
  * $excerpt = $post->post->post_excerpt;
