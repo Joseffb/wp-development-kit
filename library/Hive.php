@@ -70,6 +70,7 @@ namespace WDK;
 class Hive
 {
     private array $query_args = [];
+    private ?\WP_Post $post = null;
 
     public static function __callStatic($post_type, $arguments)
     {
@@ -113,7 +114,12 @@ class Hive
 
     public function name($post_name): Hive
     {
-        $this->query_args['name'] = $post_name;
+        $slug = get_page_by_path($post_name, OBJECT);
+        if ($slug) {
+            $this->post = $slug;
+        } else {
+            $this->query_args['title'] = $post_name;
+        }
         return $this;
     }
 
@@ -140,15 +146,15 @@ class Hive
         if (method_exists($search, 'hive_get')) {
             return $search->hive_get($this->query_args);
         }
-        $post = $search->search("", $this->query_args)->posts[0];
-        //$post = (new WP_Query($this->query_args))->posts[0];
+        $post = null;
+        if (!$this->post) {
+            $post = $search->search("", $this->query_args)->posts[0];
+            //$post = (new WP_Query($this->query_args))->posts[0];
+        }
 
         if (!$post) {
             return null;
         }
-
-        // Get post meta data
-        $meta = get_post_meta($post->ID);
 
         // Get taxonomy data
         $taxonomies = get_object_taxonomies($post->post_type);
@@ -158,20 +164,161 @@ class Hive
         foreach ($taxonomies as $taxonomy) {
             $taxonomy_data[$taxonomy] = get_the_terms($post->ID, $taxonomy);
         }
-        if(!empty($taxonomy_data[$shadow_term->name])) {
+        if (!empty($taxonomy_data[$shadow_term->name])) {
             $taxonomy_data['shadow'] = [$taxonomy_data[$shadow_term] ?? null];
             unset($taxonomy_data[$shadow_term->name]);
         }
         return (object)[
             'post' => $post,
-            'meta' => $meta,
+            'meta' => get_post_meta($post->ID),
             'taxonomies' => $taxonomy_data,
-            'update' => [
-                'post' => function ($args) use ($post) {
-                    $args['ID'] = $post->ID;
+            'media' => new class ($post) {
+                private \WP_Post $post;
+                private \wpdb $wpdb;
+                public function __construct($post)
+                {
+                    global $wpdb;
+                    $this->post = $post;
+                    $this->wpdb = $wpdb;
+                }
+
+                public function image(): array
+                {
+                    return $this->get_by_mime_type_wildcard('image');
+                }
+
+                public function audio(): array
+                {
+                    return $this->get_by_mime_type_wildcard('audio');
+                }
+
+                public function video(): array
+                {
+                    return $this->get_by_mime_type_wildcard('video');
+                }
+
+                public function application(): array
+                {
+                    return $this->get_by_mime_type_wildcard('application');
+                }
+
+                public function pdf(): array
+                {
+                    return $this->get_by_mime_type('application/pdf');
+                }
+
+                public function html(): array
+                {
+                    return $this->get_by_mime_type('text/html');
+                }
+
+                public function xml(): array
+                {
+                    return $this->get_by_mime_type('application/xml');
+                }
+
+                public function css(): array
+                {
+                    return $this->get_by_mime_type('text/css');
+                }
+
+                public function js(): array
+                {
+                    return $this->get_by_mime_type('application/javascript');
+                }
+
+                public function zip(): array
+                {
+                    return $this->get_by_mime_type('application/zip');
+                }
+
+                public function tar(): array
+                {
+                    return $this->get_by_mime_type('application/tar');
+                }
+
+                public function rar(): array
+                {
+                    return $this->get_by_mime_type('application/rar');
+                }
+
+                private function get_by_mime_type_wildcard($mime_type): array
+                {
+                    $sql = $this->wpdb->prepare(
+                        "SELECT * FROM {$this->wpdb->posts} 
+             WHERE post_parent = %d 
+             AND post_type = 'attachment' 
+             AND post_mime_type LIKE %s 
+             ORDER BY post_date ASC",
+                        $this->post->ID,
+                        $mime_type . '%'
+                    );
+
+                    return $this->wpdb->get_results($sql);
+                }
+
+                private function get_by_mime_type($mime_type): array
+                {
+                    $args = array(
+                        'posts_per_page' => -1,
+                        'order' => 'ASC',
+                        'post_parent' => $this->post->ID,
+                        'post_type' => 'attachment',
+                        'post_mime_type' => $mime_type
+                    );
+                    return get_children($args);
+                }
+            },
+            'relationships' => new class($post) {
+                private \WP_Post $post;
+
+                public function __construct($post)
+                {
+                    $this->post = $post;
+                }
+
+                public function children(): array
+                {
+                    $args = array(
+                        'posts_per_page' => -1,
+                        'order' => 'ASC',
+                        'post_parent' => $this->post->ID,
+                        'post_type' => 'any',
+                        'post_status' => 'any',
+                        'post__not_in' => get_posts(array(
+                            'post_type' => 'attachment',
+                            'post_parent' => $this->post->ID,
+                            'posts_per_page' => -1,
+                            'fields' => 'ids'
+                        )),
+                    );
+                    return (new \WP_Query($args))->get_posts();
+                }
+
+                public function parent()
+                {
+                    if ($this->post->post_parent) {
+                        return get_post($this->post->post_parent);
+                    }
+                    return null;
+                }
+            },
+            'update' => new class($post) {
+                private \WP_Post $post;
+
+                public function __construct($post)
+                {
+                    $this->post = $post;
+                }
+
+                public function post($args)
+                {
+                    $args['ID'] = $this->post->ID;
                     wp_update_post($args);
-                },
-                'taxonomy' => function ($taxonomy, $term, $args = []) use ($post) {
+                }
+
+                public function taxonomy($taxonomy, $term, $args = [])
+                {
                     $term_id = term_exists($term, $taxonomy);
 
                     if (!$term_id) {
@@ -179,29 +326,43 @@ class Hive
                         $term_id = $term['term_id'];
                     }
 
-                    return wp_set_object_terms($post->ID, $term_id, $taxonomy);
-                },
-                'meta' => function ($key, $value) use ($post) {
-                    return update_post_meta($post->ID, $key, $value);
-                },
-            ],
-            'delete' => [
-                'post' => function () use ($post) {
-                    wp_delete_post($post->ID, true);
-                },
-                'taxonomy' => function ($taxonomy, $term) use ($post): bool {
+                    return wp_set_object_terms($this->post->ID, $term_id, $taxonomy);
+                }
+
+                public function meta($key, $value)
+                {
+                    return update_post_meta($this->post->ID, $key, $value);
+                }
+            },
+            'delete' => new class($post) {
+                private $post;
+
+                public function __construct($post)
+                {
+                    $this->post = $post;
+                }
+
+                public function post()
+                {
+                    wp_delete_post($this->post->ID, true);
+                }
+
+                public function taxonomy($taxonomy, $term): bool
+                {
                     $term_id = term_exists($term, $taxonomy);
 
                     if (!$term_id) {
                         return false;
                     }
 
-                    return wp_remove_object_terms($post->ID, $term_id, $taxonomy);
-                },
-                'meta' => function ($key) use ($post) {
-                    return delete_post_meta($post->ID, $key);
-                },
-            ],
+                    return wp_remove_object_terms($this->post->ID, $term_id, $taxonomy);
+                }
+
+                public function meta($key)
+                {
+                    return delete_post_meta($this->post->ID, $key);
+                }
+            }
         ];
     }
 }
