@@ -198,7 +198,7 @@ class Hive
         return (object)[
             'post' => $post,
             'meta' => get_post_meta($post->ID),
-            'taxonomies' => $taxonomy_data,
+            'taxonomy' => $taxonomy_data,
             'media' => new class ($post) {
                 private \WP_Post $post;
                 private \wpdb $wpdb;
