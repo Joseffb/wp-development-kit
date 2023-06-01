@@ -6,10 +6,10 @@ namespace WDK;
  * post data and related metadata and taxonomies.
  *
  * Usage:
- * - Get a post by ID: `$post = Hive::post_name(123);`
- * - Get a post by name: `$post = Hive::post_name('example-post');`
- * - Get a post by shadow taxonomy: `$post = Hive::post_name(['shadow_term_id' => 1234]);`
- * - Get a post with specific meta value: `$post = Hive::post_name(['meta' => ['meta_key' => 'meta_value']]);`
+ * - Get a post by ID: `$post = Hive::post_type_name(123);`
+ * - Get a post by name: `$post = Hive::post_type_name('example-post');`
+ * - Get a post by shadow taxonomy: `$post = Hive::post_type_name(['shadow_term_id' => 1234]);`
+ * - Get a post with specific meta value: `$post = Hive::post_type_name(['meta' => ['meta_key' => 'meta_value']]);`
  *
  * Once you have a post, you can access its data using the following properties:
  * - `$post->post` : the WP_Post object for the post
