@@ -159,14 +159,32 @@ class Hive
         // Get taxonomy data
         $taxonomies = get_object_taxonomies($post->post_type);
         $taxonomy_data = [];
-        $shadow_id = Shadow::GetAssociatedTermID($post);
-        $shadow_term = $shadow_id ? get_term($shadow_id) : null;
         foreach ($taxonomies as $taxonomy) {
-            $taxonomy_data[$taxonomy] = get_the_terms($post->ID, $taxonomy);
-        }
-        if (!empty($taxonomy_data[$shadow_term->name])) {
-            $taxonomy_data['shadow'] = [$taxonomy_data[$shadow_term] ?? null];
-            unset($taxonomy_data[$shadow_term->name]);
+            $taxonomy_data[$taxonomy] = get_the_terms($post->ID, $taxonomy)[0];
+            if(str_contains($taxonomy,'_tax') || str_contains($taxonomy,'_shadow-tax')) {
+                $taxonomy_data['shadows'][$taxonomy]['taxonomy']= $taxonomy_data[$taxonomy];
+                $taxonomy_data['shadows'][$taxonomy]['post']= new class($taxonomy_data[$taxonomy]) {
+                    private \WP_Term $taxonomy;
+                    private ?\WP_Post $post = null;
+                    private bool $isLoaded = false;
+
+                    public function __construct($taxonomy)
+                    {
+                        $this->taxonomy = $taxonomy;
+                    }
+
+                    public function load()
+                    {
+                        if (!$this->isLoaded && function_exists('get_associated_post')) {
+                            $this->post = Shadow::GetAssociatedPost($this->taxonomy);
+                            $this->isLoaded = true;
+                        }
+
+                        return $this->post;
+                    }
+                };
+                unset($taxonomy_data[$taxonomy]);
+            }
         }
         return (object)[
             'post' => $post,

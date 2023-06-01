@@ -229,7 +229,7 @@ class Shadow {
      *
      * @param object $term WP Term Objct.
      *
-     * @return bool|object Returns the associated post object or false if no post is found.
+     * @return bool|\WP_Post Returns the associated post object or false if no post is found.
      */
     public static function GetAssociatedPost(object $term)
     {
@@ -241,7 +241,7 @@ class Shadow {
      *
      * @param object $term WP Term Objct.
      *
-     * @return bool|object Returns the associated post object or false if no post is found.
+     * @return bool|\WP_Post Returns the associated post object or false if no post is found.
      */
     public static function GetAssociatedSinglePost(object $term)
     {
