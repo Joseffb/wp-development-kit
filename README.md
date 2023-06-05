@@ -191,6 +191,7 @@ add_filter('wdk_context_templatename', function($context) {
 ```
 
 ### Change Log
+0.0.41 - Added Hive class for centralized post management.
 
 0.0.2 - Fixed warning when no config file is available.
 
