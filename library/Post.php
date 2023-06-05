@@ -13,8 +13,9 @@ class Post {
 	 * @param $content - content
 	 * @param $meta - template, categories, tags, taxonomies
 	 */
-	public static function CreatePost( $type, $title, $content, $meta ) {
-		$check_page_exist = get_page_by_title( $title, 'OBJECT', $type );
+	public static function CreatePost( $type, $title, $content, $meta ): void
+    {
+		$check_page_exist = get_page_by_path( sanitize_title($title), 'OBJECT', $type );
 // Check if the page already exists
 //		Log::Write(empty( $check_page_exist ));
 //		Log::Write($type);
@@ -24,7 +25,7 @@ class Post {
 		if ( empty( $check_page_exist ) ) {
 			$parent = 0;
 			if ( ! empty( $meta['post_parent'] ) ) {
-				$parent_obj = get_page_by_title( $meta['post_parent'] );
+				$parent_obj = get_post($meta['post_parent']);
 				$parent     = $parent_obj->ID ?: $parent;
 			}
 			$args = array(
@@ -64,7 +65,7 @@ class Post {
      * @param string $target 'next' or 'prev'
      * @return int|string
      */
-    public static function GetNextPrevPageID(int $id, string $target="next"): int|bool
+    public static function GetNextPrevPageID(int $id, string $target="next")
     {
         // Get all pages under this section
         $post = get_post($id);
