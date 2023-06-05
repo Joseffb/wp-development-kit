@@ -15,14 +15,7 @@ class Post {
 	 */
 	public static function CreatePost( $type, $title, $content, $meta ): void
     {
-		$check_page_exist = get_page_by_path( sanitize_title($title), 'OBJECT', $type );
-// Check if the page already exists
-//		Log::Write(empty( $check_page_exist ));
-//		Log::Write($type);
-//		Log::Write($title);
-//		Log::Write($content);
-//		Log::Write($meta);
-		if ( empty( $check_page_exist ) ) {
+		if ( empty( get_page_by_path( sanitize_title($title), 'OBJECT', $type )) ) {
 			$parent = 0;
 			if ( ! empty( $meta['post_parent'] ) ) {
 				$parent_obj = get_post($meta['post_parent']);
@@ -41,7 +34,6 @@ class Post {
 				'menu_order'     => ! empty( $meta['menu_order'] ) ? $meta['menu_order'] : 0,
 			);
 			$page_id = wp_insert_post( $args );
-			//Log::Write($page_id);
 			if ( ! empty( $meta['template'] ) ) {
 				update_post_meta( $page_id, 'template', $meta['template'] );
 			}
