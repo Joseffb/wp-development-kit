@@ -171,7 +171,12 @@ class Hive
         $args = $arguments[0];
         $hive = new self($post_type);
 
-        if (is_int($args) || is_numeric($args)) {
+        if ($args instanceof \WP_Post) {
+            $hive->post = $args;
+            return $hive->get();
+        }
+
+        if(is_int($args) || is_numeric($args)) {
             $hive->id($args);
         } elseif (is_string($args)) {
             $hive->name($args);
@@ -236,14 +241,16 @@ class Hive
         if (method_exists($search, 'hive_get')) {
             return $search->hive_get($this->query_args);
         }
-        $post = null;
-        if (!$this->post) {
-            $post = $search->search("", $this->query_args)->posts[0];
-            //$post = (new WP_Query($this->query_args))->posts[0];
-        }
 
-        if (!$post) {
-            return null;
+        if (!$this->post) {
+            $post = $search->search("", $this->query_args);
+            //$post = (new WP_Query($this->query_args));
+            if (!$post->have_posts()) {
+                return null;
+            }
+            $post = $post->get_posts()[0];
+        } else {
+            $post = $this->post;
         }
 
         // Get taxonomy data
