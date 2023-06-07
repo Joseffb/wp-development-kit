@@ -73,7 +73,7 @@ namespace WDK;
  * $post_title = $post['post']->ID;
  *
  * //call a post type named after PHP reserved word 'abstract'
- * $post = Hive::r_abstract(42);
+ * $post = Hive::rw_abstract(42);
  * $title = $post['post']->post_title;
  *
  * // Get a post by title
@@ -141,8 +141,9 @@ class Hive
     public static function __callStatic(string $post_type, $arguments = null)
     {
         //used for PHP reserved words
-        if($post_type[0].$post_type[1] === 'r_') {
-            $post_type = str_replace("r_","",$post_type);
+        $reserved_prefix = $post_type[0].$post_type[1].$post_type[2];
+        if($reserved_prefix === 'rw_') {
+            $post_type = str_replace($reserved_prefix,"",$post_type);
         }
 
         if (!post_type_exists($post_type)) {
