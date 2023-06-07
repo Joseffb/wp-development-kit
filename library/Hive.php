@@ -76,6 +76,10 @@ namespace WDK;
  * $post = Hive::rw_abstract(42);
  * $title = $post['post']->post_title;
  *
+ * // Get a post by manually loading post type and identifier (PHP reserved word 'and' as post type here)
+ * $post = Hive::_load('and',42);
+ * $title = $post['post']->post_title;
+ *
  * // Get a post by title
  * $contest = Hive::contest('example');
  * !empty($contest) //result true
@@ -140,17 +144,31 @@ class Hive
      */
     public static function __callStatic(string $post_type, $arguments = null)
     {
+        return self::_load($post_type, $arguments);
+    }
+
+    /**
+     * @param string|array|null $arguments array
+     * @param $post_type string defaults to post
+     * @return object|null
+     */
+    public static function _load(string $post_type = 'post', $arguments = null ): ?object
+    {
+        if (empty($arguments)) {
+            return null;
+        }
+
         //used for PHP reserved words
-        $reserved_prefix = $post_type[0].$post_type[1].$post_type[2];
-        if($reserved_prefix === 'rw_') {
-            $post_type = str_replace($reserved_prefix,"",$post_type);
+        $reserved_prefix = $post_type[0] . $post_type[1] . $post_type[2];
+        if ($reserved_prefix === 'rw_') {
+            $post_type = str_replace($reserved_prefix, "", $post_type);
         }
 
         if (!post_type_exists($post_type)) {
             return null;
         }
 
-        $args = $arguments[0] ?? [];
+        $args = $arguments[0];
         $hive = new self($post_type);
 
         if (is_int($args) || is_numeric($args)) {
@@ -356,7 +374,7 @@ class Hive
                     ]);
 
                     $commentObjects = [];
-                    foreach ($comments??[] as $comment) {
+                    foreach ($comments ?? [] as $comment) {
                         $commentObjects[] = new class($comment) {
                             private \WP_Comment $comment;
 
