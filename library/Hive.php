@@ -73,7 +73,7 @@ namespace WDK;
  * $post_title = $post['post']->ID;
  *
  * //call a post type named after PHP reserved word 'abstract'
- * $post = Hive::__abstract(42);
+ * $post = Hive::r_abstract(42);
  * $title = $post['post']->post_title;
  *
  * // Get a post by title
