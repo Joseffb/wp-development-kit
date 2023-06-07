@@ -129,8 +129,18 @@ class Hive
     private array $query_args = [];
     private ?\WP_Post $post = null;
 
-    public static function __callStatic($post_type, $arguments)
+    /**
+     * @param $post_type string
+     * @param string|array|null $arguments array
+     * @return object|null
+     */
+    public static function __callStatic(string $post_type, $arguments = null)
     {
+        //used for PHP reserved words
+        if($post_type[0].$post_type[1] === 'r_') {
+            $post_type = str_replace("r_","",$post_type);
+        }
+
         if (!post_type_exists($post_type)) {
             return null;
         }
