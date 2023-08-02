@@ -84,7 +84,7 @@ class Search
      */
     public static function find($query, $args = [], $provider = 'WP_Local_Search_Provider'): \WP_Query
     {
-        return (new self($provider, $args))->search($query);
+        return (new self($provider, $args))->search($query,$args);
     }
 
     /**

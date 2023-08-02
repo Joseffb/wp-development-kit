@@ -6,6 +6,9 @@ class WP_Local_Search_Provider extends WP_Search_Provider
 {
     public function search($query, $args = []): \WP_Query
     {
+        if(!empty($query)) {
+            $args['s']=$query;
+        }
         if (isset($args['like']) && $args['like']) {
             global $wpdb;
             $like_query = '%' . $wpdb->esc_like($query) . '%';
@@ -15,7 +18,7 @@ class WP_Local_Search_Provider extends WP_Search_Provider
                  AND post_type != 'revision' AND post_status = 'publish';",
                 $like_query, $like_query
             ));
-
+            unset($args['s']);
             $args['post__in'] = !empty($post_ids) ? $post_ids : array(-1);
         }
 
@@ -56,55 +59,3 @@ class WP_Local_Search_Provider extends WP_Search_Provider
         return $query;
     }
 }
-
-/**
- * Example uses:
- *
- * Post Search
- * $search = search(array(
- * 's' => 'example', // Search keyword
- * 'post_type' => 'post', // Post type
- * ));
- *
- * Taxonomy Search
- * $search = search(array(
- * 'tax_query' => array(
- * array(
- * 'taxonomy' => 'category', // Taxonomy name
- * 'field' => 'slug',
- * 'terms' => 'technology', // Term slug
- * ),
- * ),
- * ));
- *
- * Meta Search
- * $search = search(array(
- * 'meta_query' => array(
- * array(
- * 'key' => 'custom_meta_key', // Meta key
- * 'value' => 'custom_value', // Meta value
- * 'compare' => '=', // Comparison operator
- * ),
- * ),
- * ));
- *
- * Mixed Search
- * $search = search(array(
- * 's' => 'example', // Search keyword
- * 'post_type' => 'post', // Post type
- * 'tax_query' => array(
- * array(
- * 'taxonomy' => 'category', // Taxonomy name
- * 'field' => 'slug',
- * 'terms' => 'technology', // Term slug
- * ),
- * ),
- * 'meta_query' => array(
- * array(
- * 'key' => 'custom_meta_key', // Meta key
- * 'value' => 'custom_value', // Meta value
- * 'compare' => '=', // Comparison operator
- * ),
- * ),
- * ));
- */

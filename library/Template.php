@@ -187,7 +187,13 @@ class Template
                 //$start = Helper::start_timer();
                 $context = Timber::context();
                 $context['page-template'] = $templates = self::get_template();
-                if (!empty($templates) && is_array($templates)) {
+                if ($templates && (WP_DEBUG || $show_templates)) {
+                    Utility::Log($templates, 'Debug Only Message::Twig Template Hooks');
+                }
+                if (!empty($templates)) {
+                    if(!is_array($templates)) {
+                        $templates= [$templates];
+                    }
                     $context['post'] = new Post();
                     if (WP_DEBUG || $show_templates) {
                         $context_hooks = [];
@@ -201,11 +207,6 @@ class Template
                     }
                     if (WP_DEBUG || $show_templates) {
                         Utility::Log($context_hooks, 'Debug Only Message::Twig Template Context Hooks');
-                        Utility::Log($templates, 'Debug Only Message::Twig Template Context Hooks');
-                    }
-                } else {
-                    if (WP_DEBUG || $show_templates) {
-                        Utility::Log('No Template - No Context Hooks', 'Debug Only Message::Twig Template');
                     }
                 }
 

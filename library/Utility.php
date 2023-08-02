@@ -256,17 +256,55 @@ class Utility
         return array_values($temp_array);
     }
 
-    public static function Enqueuer( $handle, $relpath, $type='script', $my_deps=array(), $in_footer = true ): void
+    /**
+     * Function to enqueue scripts and styles.
+     *
+     * @param string $handle    Name of the script or style (should be unique as it is used to identify the script or style).
+     * @param string $relpath   Relative path or full URL to the script or style.
+     * @param string|null $type Type of the file ('script', 'style', 'auto', or null). If 'auto' or null, type is inferred from file extension.
+     * @param array $my_deps    Array of the handles of all the registered scripts that this script depends on,
+     *                          i.e., scripts that must be loaded before this script.
+     *                          It's an empty array by default.
+     * @param bool $in_footer   Whether to enqueue the script before </body> instead of in the <head>.
+     *                          `false` is default, which places it in the <head>.
+     *                          `true` places it before the closing </body> tag.
+     *
+     * @return void
+     */
+    public static function Enqueuer($handle, $relpath, $type='auto', $my_deps=array(), $in_footer = true): void
     {
-        $uri = get_theme_file_uri($relpath);
-        $vsn = filemtime(get_theme_file_path($relpath));
+        // If relpath starts with a leading slash, remove it
+        $relpath = ltrim($relpath, '/');
 
-        if($type == 'script') {
+        if (parse_url($relpath, PHP_URL_SCHEME) === null){
+            // if relpath doesn't contain a scheme (http, https, ftp etc), it means it's a relative URL
+            $uri = get_stylesheet_directory_uri() . '/' . $relpath;
+            $vsn = filemtime(get_theme_file_path($relpath));
+        } else {
+            // if it does contain a scheme, it's an absolute URL, so don't modify it
+            $uri = $relpath;
+            $vsn = null; // or provide a version number in some other way
+        }
+        // Determine file type based on extension if 'auto' is selected
+        if ($type === 'auto' || is_null($type)) {
+            $extension = pathinfo($uri, PATHINFO_EXTENSION);
+            self::log($extension);
+            if ($extension === 'js') {
+                $type = 'script';
+            } elseif ($extension === 'css') {
+                $type = 'style';
+            }
+        }
+
+        if($type === 'script') {
             wp_enqueue_script($handle, $uri, $my_deps, $vsn, $in_footer);
-        } else if($type == 'style') {
+        } else if($type === 'style') {
             wp_enqueue_style($handle, $uri, $my_deps, $vsn, $in_footer);
+        } else {
+            self::Log("Enqueuer: Unknown file type '{$type}' for file '{$relpath}'.");
         }
     }
+
     /**
      * @param $dir
      * @return bool|null

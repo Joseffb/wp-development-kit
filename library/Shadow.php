@@ -285,12 +285,18 @@ class Shadow {
     /**
      * public static function gets the associated shadow term of a given post object
      *
-     * @param object $post WP Post Object.
+     * @param object | int $post WP Post Object.
      *
      * @return bool | int returns the term_id or false if no associated term was found.
      */
-    public static function GetAssociatedTermID(object $post) {
-        return get_post_meta($post->ID, 'shadow_term_id', true);
+    public static function GetAssociatedTermID($post)
+    {
+        $post_id = $post->ID;
+        if(is_numeric($post)) {
+            $post_id = $post;
+        }
+
+        return get_post_meta($post_id, 'shadow_term_id', true);
     }
 
     /**
