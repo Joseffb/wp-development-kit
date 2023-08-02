@@ -288,7 +288,6 @@ class Utility
         // Determine file type based on extension if 'auto' is selected
         if ($type === 'auto' || is_null($type)) {
             $extension = pathinfo($uri, PATHINFO_EXTENSION);
-            self::log($extension);
             if ($extension === 'js') {
                 $type = 'script';
             } elseif ($extension === 'css') {
