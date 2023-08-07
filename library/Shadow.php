@@ -149,7 +149,7 @@ class Shadow {
      *
      * @return array | bool array Term ID if created or false if an error occurred.
      */
-    public static function CreateShadowTaxonomyTerm(int $post_id, object $post, string $taxonomy): bool
+    public static function CreateShadowTaxonomyTerm(int $post_id, object $post, string $taxonomy)
     {
         $new_term = wp_insert_term($post->post_title, $taxonomy, ['slug' => $post->post_name]);
 
