@@ -62,10 +62,10 @@ class Template
     public static function get_template()
     {
         global $post;
-        if (preg_match('~(\.css|\.js|\.map|\.pdf|\.png|\.jpg/\.gif\.doc\.xls\.ico)~', $_SERVER['REQUEST_URI'])) {
+        if (preg_match('~(\.css|\.js|\.map|\.pdf|\.png|\.jpg|\.gif|.ttf|\.doc|\.xls|\.ico|\.woff2|\.woff|\.svg|admin-ajax.php)~', $_SERVER['REQUEST_URI'])) {
             return false;
         }
-
+        Utility::Log($_SERVER['REQUEST_URI']);
         // Loop through each of the template conditionals, and find the appropriate template file base.
         $ext = '.twig';
         $template = false;
@@ -73,6 +73,7 @@ class Template
         foreach (self::$templates as $tag => $template_getter) {
             if ($tag()) {
                 $base = $template_getter;
+                Utility::Log('wdk_process_template_' . $base);
                 switch ($base) {
                     case 'single':
                         Utility::Log('wdk_process_template_cpt_' . $post->post_type);
@@ -88,20 +89,20 @@ class Template
                         }
                         break;
                     case 'page':
-                        //check to run a Twig template on a specific page. set in functions file via update_post_meta($post_id, "process_template_page_PAGESLUG", true)
-                        //Utility::Log($post);
                         $post_type_check = get_option('wdk_process_template_page_' . $post->post_name); //run a twig template for the CPT archive page.
-                        //Utility::Log($post_type_check);
                         $page_specific_check = get_post_meta($post->ID, 'wdk_process_template_page_' . $post->post_name, true);
                         $template_check = !empty($page_specific_check) ? $page_specific_check : $post_type_check;
-                        Utility::Log($template_check);
+                        //Utility::Log($template_check);
                         if (!empty($template_check)) {
-                            Utility::Log($template_check);
+                            //Utility::Log($template_check);
                             if (!is_bool($template_check)) {
                                 $template = $template_check;
                             }
-                            Utility::Log($template);
+                            //Utility::Log($template);
                             $template = self::handle_page($post, $template, $base);
+                        } elseif($page_enabled = get_option('wdk_process_template_page')) {
+                            $template = self::handle_page($post, $template, str_replace('.twig','',$page_enabled));
+                            // Utility::Log($template);
                         } else {
                             return false;
                         }
@@ -162,6 +163,7 @@ class Template
                         break;
                     default:
                         $default = get_option('wdk_process_template_' . $base);
+
                         if (Utility::IsTrue($default)) {
                             $template = ['index' . $ext, 'base' . $ext];
                         } else {
@@ -223,6 +225,7 @@ class Template
             add_filter('template_include', function ($template) {
                 $context = Timber::context();
                 if ($context['page-template']) {
+                    Utility::Log($context['page-template']);
                     Timber::render($context['page-template'], $context);
                 } else {
                     return $template;
