@@ -1,6 +1,7 @@
 <?php
 
 namespace WDK;
+
 /**
  * The `PostInterface` class is an object-oriented utility class for querying WordPress posts, and provides a convenient way to access
  * post data and related metadata and taxonomies. The class now leverages magic methods to handle different post types dynamically.
@@ -38,9 +39,9 @@ namespace WDK;
  *
  * $post->taxonomy`: an array of all post taxonomy values
  * $post->taxonomy->taxonomy_name`: an array of post taxonomy values specific to the taxonomy called 'taxonomy_name'
- * $post->taxonomy->taxonomy_name[0]->update($term_value, $optional_args)`: updates the term for this taxonomy for that post. Adds term if missing. The arguments $term_value is the name or ID of the term to be added or updated, and $optional_args is an associative array of arguments to pass to wp_insert_term() if not provided default will be used.
- * $post->taxonomy->taxonomy_name[0]->delete()`: deletes the term for this taxonomy from that post.
- * $post->taxonomy->taxonomy_name[0]->get_shadow()`: Gets associated shadow post. null if not applicable.
+ * $post->taxonomy->taxonomy_name->update($term_value, $optional_args)`: updates the term for this taxonomy for that post. Adds term if missing. The arguments $term_value is the name or ID of the term to be added or updated, and $optional_args is an associative array of arguments to pass to wp_insert_term() if not provided default will be used.
+ * $post->taxonomy->taxonomy_name->delete()`: deletes the term for this taxonomy from that post.
+ * $post->taxonomy->taxonomy_name->get_shadow()`: Gets associated shadow post. null if not applicable.
  *
  * Finally, the following methods are available for media and relationship management:
  * $post->media->images()` : get all associated images
@@ -135,6 +136,16 @@ class PostInterface
 {
     private ?array $query_args;
     private ?\WP_Post $post = null;
+    /**
+     * @var mixed
+     */
+    private $post_type;
+
+    public function __destruct() {
+        // Perform cleanup
+        $this->query_args = null; // Or reset to an empty array, if it's an array
+        $this->post = null; // Or reset to an empty array, if it's an array
+    }
 
     /**
      * @param $post_type string Prefix post_type with 'rw_' for reserved PHP words
@@ -167,7 +178,7 @@ class PostInterface
             return null;
         }
 
-        $args = $arguments[0];
+        $args = $arguments[0] ?? $arguments;
         //Log::Write(new self($post_type));
         $PostInterface = new self($post_type);
 
@@ -186,6 +197,7 @@ class PostInterface
                 $PostInterface->shadow($args['shadow_term_id']);
                 unset($PostInterface->query_args['shadow_term_id']);
             } else if (isset($args['meta']) && is_array($args['meta'])) {
+                // MLA_Log($args);
                 $PostInterface->meta($args['meta']);
                 unset($PostInterface->query_args['meta']);
             }
@@ -196,9 +208,37 @@ class PostInterface
 
     public function __construct($post_type)
     {
+        $this->post_type = $post_type;
         $this->query_args['post_type'] = $post_type;
         $this->query_args['posts_per_page'] = 1;
         $this->query_args['no_found_rows'] = true;
+    }
+
+    /**
+     * Creates a new post of the specified type.
+     *
+     * @param string $postType The post type.
+     * @param array $postArr The data for the post as an array.
+     * @param bool $override_on_missing_pt Override to force usage of a non-existent post-type.
+     *
+     * @return object|null The PostInterface instance for the new post or null on failure.
+     */
+    public static function createPost(string $postType, array $postArr, bool $override_on_missing_pt = false): ?object
+    {
+        // Check if the post type exists or if override is not allowed
+        if (!post_type_exists($postType) && !$override_on_missing_pt) {
+            return new \WP_Error('invalid_post_type', "Post type '{$postType}' does not exist");
+        }
+
+        $postArr['post_type'] = $postType;
+        $postId = wp_insert_post($postArr, true);
+
+        // Handle error from wp_insert_post
+        if (is_wp_error($postId)) {
+            return $postId;  // Propagate the WP_Error
+        }
+
+        return self::{$postType}($postId);
     }
 
     public function id($post_id): PostInterface
@@ -231,7 +271,16 @@ class PostInterface
 
     public function meta($meta_query): PostInterface
     {
-        $this->query_args['meta_query'] = $meta_query;
+        $this->query_args['meta_query'] = [];
+
+        foreach ($meta_query as $key => $value) {
+            $this->query_args['meta_query'][] = [
+                'key' => $key,
+                'value' => $value,
+                'compare' => '=', // Assuming you want an exact match. Change if necessary.
+            ];
+        }
+
         return $this;
     }
 
@@ -247,7 +296,8 @@ class PostInterface
                 $this->data = get_object_taxonomies($post, 'objects');
                 $this->post_id = $post->ID;
             }
-
+            public function __set($a,$b) {}
+            public function __isset($a) {}
             public function __get($taxonomy)
             {
                 $taxonomy = strtolower($taxonomy);
@@ -285,15 +335,20 @@ class PostInterface
                         unset($this->terms[$offset]);
                     }
 
-                    public function offsetGet($offset): object
+                    public function offsetGet($offset)
                     {
+//                        MLA_Log($offset, '283');
+//                        MLA_Log($this->terms, '283 terms');
                         if ($offset === 'data') {
                             return $this->data();
                         }
-
+                        if (empty($this->terms[$offset])) {
+                            return false;
+                        }
                         return new class($this->terms[$offset], $this->post_id) {
                             private $term;
                             private $post_id;
+
 
                             public function __construct($term, $post_id)
                             {
@@ -301,9 +356,13 @@ class PostInterface
                                 $this->post_id = $post_id;
                             }
 
+                            public function __set($a,$b) {}
+                            public function __isset($a) {}
                             public function __get($prop)
                             {
-                                return $this->term->$prop ?? null;
+                                if (isset($this->term->$prop)) {
+                                    return $this->term->$prop;
+                                }
                             }
 
                             public function get_shadow()
@@ -332,14 +391,24 @@ class PostInterface
 
                     public function update($name, $args = []): void
                     {
-                        $term_id = term_exists($name, $this->taxonomy);
+                        $append = !empty($args['append']);
+                        $no_creation = !empty($args['no_create']);
+                        unset($args['append'], $args['no_create']);
 
-                        if (!$term_id) {
+                        $term_id = 0;
+                        $term = term_exists($name, $this->taxonomy);
+                        if (!$term && !$no_creation) {
                             $term = wp_insert_term($name, $this->taxonomy, $args);
-                            //$term_id = $term['term_id'];
                         }
 
-                        wp_set_object_terms($this->post_id, $name, $this->taxonomy);
+                        // Process term
+                        if (is_numeric($term)) {
+                            $term_id = (int)$term;
+                        } elseif (is_array($term)) {
+                            $term_id = (int)$term['term_id'];
+                        }
+
+                        wp_set_object_terms($this->post_id, [$term_id], $this->taxonomy, $append);
                     }
 
                     public function delete($name): void
@@ -381,7 +450,6 @@ class PostInterface
         return (object)[
             'post' => new class($post) {
                 private \WP_Post $post;
-
                 public function __construct($post)
                 {
                     $this->post = $post;
@@ -410,6 +478,11 @@ class PostInterface
                 {
                     $args['ID'] = $this->post->ID;
                     return wp_update_post($args);
+                }
+
+                public function have_post()
+                {
+                    return (bool)$this->post;
                 }
 
                 public function delete()
@@ -526,7 +599,12 @@ class PostInterface
                     $field_value = $this->data[$field_name][0] ?? null;
 
                     if ($field_value !== null) {
-                        return $field_value; // Return the field value directly
+                        // Check if the value is a serialized string
+                        if ($field_value === 'b:0;' || @unserialize($field_value, [true]) !== false) {
+                            // It's serialized, unserialize it
+                            $field_value = unserialize($field_value, [true]);
+                        }
+                        return $field_value; // Return the field value directly or the unserialized array
                     }
                     return new class($field_name, $this->post, $field_value) {
                         private int $post;
@@ -572,6 +650,15 @@ class PostInterface
                 public function __isset($field_name)
                 {
                     return isset($this->data[$field_name]);
+                }
+
+                public function update($key, $value, $args = null)
+                {
+                    $this->value = $value;
+                    if(!empty($args['append'])) {
+                        return add_post_meta($this->post, $key, $value, false);
+                    }
+                    return update_post_meta($this->post, $key, $value, $args);
                 }
 
                 public function getAll()

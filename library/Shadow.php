@@ -26,36 +26,45 @@ class Shadow {
     }
 
     /**
-     * public static function creates a closure for the wp_insert_post hook, which handles creating an
-     * associated taxonomy term.
-     * @param string $post_type Post Type Slug
-     * @param string $taxonomy Taxonomy Slug
-     * @param array $conditionals Conditional taxonomy settings
-     * @usage create_relationship('nomination', 'primary', [
-     *      'operator'=>"AND",
-     *      'conditions'=>[
-     *          [
-     *              'taxonomy' => 'candidate_type',
-     *              'values'=>['primary', 'alternate']
-     *          ],
-     *          [
-     *              'taxonomy' => 'nomination_status',
-     *              'values'=>['accepted']
-     *          ]
-     *      ]
-     * ]); will only link a taxonomy if both candidate_type and nomination_status match their corresponding values
-     * @return Closure
+     * Function gets the associated shadow term of a given post object
+     *
+     * @param object $post WP Post Object.
+     *
+     * @return bool | int returns the term_id or false if no associated term was found.
      */
-
     public static function CreateShadowTerm(string $post_type, string $taxonomy, array $conditionals = []): Closure
     {
         return static function ($post_id) use ($post_type, $taxonomy, $conditionals) {
             $term = self::GetAssociatedTerm($post_id, $taxonomy);
+
             $post = get_post($post_id);
             $condition_tests = [];
 
+            // Check if post_type condition is set and handle it
+            if (!empty($conditionals['post_type'])) {
+                $posts = get_posts([
+                    'include' =>[$post_id],
+                    'post_type' => $conditionals['post_type'],
+                    'post_status' => 'publish',
+//              'numberposts' => -1,
+                ]);
+
+                foreach ($posts as $post) {
+                    // For each post of the specified type, ensure or update the shadow term
+                    if (!$term) {
+                        self::CreateShadowTaxonomyTerm($post->ID, $post, $taxonomy);
+                    } else {
+                        // Update the term if necessary
+                        self::CreateShadowTaxonomyTerm($term, $post, $taxonomy);
+                    }
+                }
+
+                return true; // Return early since we're handling a batch operation based on post_type
+            }
+
+            // Existing conditions and logic for handling individual posts
             if (!empty($conditionals) && is_array($conditionals)) {
-                $operator = !empty($conditionals['operator']) ? $conditionals['operator'] : "AND";
+                $operator = $conditionals['operator'] ?? "AND";
                 foreach ($conditionals['conditions'] as $condition) {
                     if (!has_term($condition['values'], $condition['taxonomy'], $post)) {
                         $condition_tests[] = false;
@@ -64,55 +73,29 @@ class Shadow {
                     }
                 }
 
-                //Any value needs to be false;
                 if (($operator === "AND") && in_array(false, $condition_tests, true)) {
-                    if ($term = self::GetAssociatedTerm($post_id, $taxonomy)) {
-                        wp_delete_term($term->term_id, $taxonomy);
-                    }
-
-                    return false;
-                }
-
-                //All values need to be false
-                if (($operator === "OR") && in_array(true, $condition_tests, true) === false) {
-                    if ($term = self::GetAssociatedTerm($post_id, $taxonomy)) {
+                    if ($term) {
                         wp_delete_term($term->term_id, $taxonomy);
                     }
                     return false;
                 }
 
-
+                if (($operator === "OR") && !in_array(true, $condition_tests, true)) {
+                    if ($term) {
+                        wp_delete_term($term->term_id, $taxonomy);
+                    }
+                    return false;
+                }
             }
 
-            if ($post->post_type !== $post_type) {
-                return false;
-            }
-
-            if ('auto-draft' === $post->post_status) {
+            if ($post->post_type !== $post_type || 'auto-draft' === $post->post_status) {
                 return false;
             }
 
             if (!$term) {
                 self::CreateShadowTaxonomyTerm($post_id, $post, $taxonomy);
             } else {
-                $post = self::GetAssociatedPost($term);
-
-                if (empty($post)) {
-                    return false;
-                }
-
-                if (self::PostTypeAlreadyInSync($term, $post)) {
-                    return false;
-                }
-
-                wp_update_term(
-                    $term->term_id,
-                    $taxonomy,
-                    [
-                        'name' => $post->post_title,
-                        'slug' => $post->post_name,
-                    ]
-                );
+                self::CreateShadowTaxonomyTerm($term, $post, $taxonomy);
             }
         };
 
@@ -128,7 +111,7 @@ class Shadow {
      */
     public static function DeleteShadowTerm(string $taxonomy): Closure
     {
-        return function ($post_id) use ($taxonomy) {
+        return static function ($post_id) use ($taxonomy) {
             $term_id = self::GetAssociatedTermID(get_post($post_id));
 
             if (!$term_id) {
