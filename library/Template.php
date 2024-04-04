@@ -149,15 +149,28 @@ class Template
                         $category_check = get_option('wdk_process_template_tax_category');
                         //checks if we should use a specific Twig template for a specific term in a specific the default 'category' taxonomy
                         $category_name_check = get_option('wdk_process_template_tax_category_' . $cat_name);
-                        if (!Utility::IsTrue($category_check) || !Utility::IsTrue($category_name_check)) {
-                            if ($category_check !== 'true') {
-                                $template = $category_check;
+                        // Check if both variables have values
+                        if (!empty($category_check) && !empty($category_name_check)) {
+                            // Check if either variable is not 'true', then proceed to determine the template
+                            if ($category_check !== 'true' || $category_name_check !== 'true') {
+                                if ($category_check !== 'true') {
+                                    $template = $category_check;
+                                }
+                                if ($category_name_check !== 'true') {
+                                    // This ensures $template is overwritten only if $category_name_check is not 'true',
+                                    // which handles the scenario where both checks are needed.
+                                    $template = $category_name_check;
+                                }
+                                // Log the selected template
+                               // Utility::Log($template);
+                                // Handle the category with the determined template and base
+                                $template = self::handle_category($template, $base);
+                            } else {
+                                // If both are 'true', then it does not meet the criteria for processing.
+                                return false;
                             }
-                            if ($category_name_check !== 'true') {
-                                $template = $category_name_check;
-                            }
-                            $template = self::handle_category($template, $base);
                         } else {
+                            // If either or both variables are empty, return false.
                             return false;
                         }
                         break;
