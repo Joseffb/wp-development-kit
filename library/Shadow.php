@@ -95,10 +95,52 @@ class Shadow {
             if (!$term) {
                 self::CreateShadowTaxonomyTerm($post_id, $post, $taxonomy);
             } else {
-                self::CreateShadowTaxonomyTerm($term, $post, $taxonomy);
+                self::UpdateShadowTaxonomyTerm($term, $post, $taxonomy);
             }
+            return true;
         };
+    }
 
+    /**
+     * Function checks to see if the current term and its associated post have the same
+     * title and slug. While we generally rely on term and post meta to track association,
+     * its important that these two value stay synced.
+     *
+     * @param object $term The Term Object.
+     * @param object $post The $_POST array.
+     *
+     * @return bool Return true if a match is found, or false if no match is found.
+     */
+    public static function PostTypeAlreadyInSync(object $term, object $post): bool
+    {
+        if (isset($term->slug, $post->post_name)) {
+            if ($term->name === $post->post_title && $term->slug === $post->post_name) {
+                return true;
+            }
+        } else if ($term->name === $post->post_title) {
+            return true;
+        }
+
+        return false;
+    }
+
+    public static function UpdateShadowTaxonomyTerm($term, $post, $taxonomy): bool
+    {
+        // Assuming this function correctly updates the term based on the associated post.
+        if (empty($post) || self::PostTypeAlreadyInSync($term, $post)) {
+            return false;
+        }
+
+        wp_update_term(
+            $term->term_id,
+            $taxonomy,
+            [
+                'name' => $post->post_title,
+                'slug' => $post->post_name,
+            ]
+        );
+
+        return true;
     }
 
     /**
@@ -144,29 +186,6 @@ class Shadow {
         update_post_meta($post_id, 'shadow_term_id', $new_term['term_id']);
 
         return $new_term;
-    }
-
-    /**
-     * public static function checks to see if the current term and its associated post have the same
-     * title and slug. While we generally rely on term and post meta to track association,
-     * its important that these two value stay synced.
-     *
-     * @param object $term The Term Object.
-     * @param object $post The $_POST array.
-     *
-     * @return bool Return true if a match is found, or false if no match is found.
-     */
-    public static function PostTypeAlreadyInSync(object $term, object $post): bool
-    {
-        if (isset($term->slug, $post->post_name)) {
-            if ($term->name === $post->post_title && $term->slug === $post->post_name) {
-                return true;
-            }
-        } else if ($term->name === $post->post_title) {
-            return true;
-        }
-
-        return false;
     }
 
     /**
