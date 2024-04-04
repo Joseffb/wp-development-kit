@@ -13,9 +13,8 @@ class PostType
     public static function CreateCustomPostType($post_type_name, array $args)
     {
 
-        $name = ucwords($post_type_name);
+        $name = $args['label']?ucwords($args['label']):ucwords($post_type_name);
         $post_type_name = strtolower(str_replace(" ", "_", strtolower($post_type_name)));
-
         $args = array_merge(array(
             'hierarchical' => true,
             'show_in_rest' => true,
