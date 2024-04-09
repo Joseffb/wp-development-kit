@@ -43,26 +43,28 @@ class Search
     }
 
     /**
-     * @param string $provider
+     * @param string|null $provider
      * @param $args
      */
-    public function __construct(string $provider = '\\WDK\\WP_Local_Search_Provider', $args = [])
+    public function __construct(?string $provider = '\\WDK\\WP_Local_Search_Provider', $args = [])
     {
+        Utility::Log($provider);
         // Check if the given class exists
-        if (!class_exists($provider)) {
+        if ($provider && !class_exists($provider)) {
             // Check if the WDK namespaced class exists
             $wdkNamespacedProvider = "\\WDK\\$provider";
             if (class_exists($wdkNamespacedProvider)) {
-                $provider = $wdkNamespacedProvider;
+                Utility::Log($wdkNamespacedProvider);
+                $this->search_provider = $provider = $wdkNamespacedProvider;
             }
             // Check if the called_namespaced class exists
             else {
                 $callingNamespace = $this->get_calling_namespace();
                 //echo "Calling namespace: " . $callingNamespace . PHP_EOL;
                 $calledNamespacedProvider = $callingNamespace . '\\' . $provider;
-
+                Utility::Log($calledNamespacedProvider);
                 if (class_exists($calledNamespacedProvider)) {
-                    $provider = $calledNamespacedProvider;
+                    $this->search_provider = $provider = $calledNamespacedProvider;
                 } else {
                     throw new RuntimeException('Invalid search provider class provided: ' . $provider);
                 }

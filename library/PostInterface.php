@@ -1,7 +1,8 @@
 <?php
 
 namespace WDK;
-
+use ReturnTypeWillChange;
+use \WP_Post;
 /**
  * The `PostInterface` class is an object-oriented utility class for querying WordPress posts, and provides a convenient way to access
  * post data and related metadata and taxonomies. The class now leverages magic methods to handle different post types dynamically.
@@ -335,6 +336,10 @@ class PostInterface
                         unset($this->terms[$offset]);
                     }
 
+                    /**
+                     * @param $offset
+                     * @return mixed
+                     */
                     public function offsetGet($offset)
                     {
 //                        MLA_Log($offset, '283');
@@ -342,13 +347,15 @@ class PostInterface
                         if ($offset === 'data') {
                             return $this->data();
                         }
-                        if (empty($this->terms[$offset])) {
+                        if (is_wp_error($this->terms) || empty($this->terms[$offset])) {
+                            if(is_wp_error($this->terms)) {
+                                Utility::Log($this->terms, "Fatal Error");
+                            }
                             return false;
                         }
                         return new class($this->terms[$offset], $this->post_id) {
                             private $term;
                             private $post_id;
-
 
                             public function __construct($term, $post_id)
                             {
@@ -428,16 +435,15 @@ class PostInterface
     {
         if (!$this->post) {
             if (method_exists(\WDK\Search::class, 'search')) {
-                $provider = $this->query_args['search_provider'] ?? null;
-                $search = new Search($provider);
+                $search = empty($this->query_args['search_provider']) ? new Search():new Search($this->query_args['search_provider']);
                 if (method_exists($search, 'PostInterface_get')) {
                     return $search->PostInterface_get($this->query_args);
                 }
-                $post = $search->search("", $this->query_args)->posts[0];
+                $post = $search->search("", $this->query_args);
             } else {
                 $post = (new \WP_Query($this->query_args));
             }
-
+            Utility::Log($post);
             if (!$post->have_posts()) {
                 return null;
             }
