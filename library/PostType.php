@@ -36,11 +36,17 @@ class PostType
         );
         add_action('init', function () use ($post_type_name, $args, $name) {
             $post_type_name = Inflector::singularize($post_type_name);
-            $p = register_post_type($post_type_name, $args);
+            register_post_type($post_type_name, $args);
 
-            if(!empty($args['use_twig'])) {
-                delete_option("wdk_process_template_cpt_$post_type_name"); //removes old data entries.
-                update_option("wdk_process_template_cpt_$post_type_name", $args['use_twig']);
+            $post_type_constant = strtoupper("WDK_PROCESS_TEMPLATE_CPT_{$post_type_name}");
+
+            //Version 0.0.55 - changed from option to constant
+            if (!defined($post_type_constant) && !empty($args['use_twig'])) {
+                // Define the constant dynamically as true
+                define($post_type_constant, true);
+            } elseif (defined($post_type_constant) && !$args['use_twig']) {
+                // Optional: Log or notify if the constant is already set and use_twig is false
+                Utility::Log("Constant {$post_type_constant} already defined. Skipping.");
             }
             //Version 0.0.10 changes related_cpt for shadow_in_cpt which is a more accurate name.
             $shadow_cpt = $args['related_cpt'] ?? $args['shadow_in_cpt'];

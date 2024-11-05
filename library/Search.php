@@ -44,10 +44,13 @@ class Search
 
     /**
      * @param string|null $provider
-     * @param $args
+     * @param array $args
      */
-    public function __construct(?string $provider = '\\WDK\\WP_Local_Search_Provider', $args = [])
+    public function __construct(?string $provider = null, array $args = [])
     {
+        // Default provider if none is provided
+        $provider = $provider ?? '\\WDK\\WP_Local_Search_Provider';
+
         Utility::Log($provider);
         // Check if the given class exists
         if ($provider && !class_exists($provider)) {

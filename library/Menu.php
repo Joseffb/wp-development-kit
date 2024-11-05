@@ -11,7 +11,7 @@ class Menu
      */
     public static function CreateCustomMenu(array $config): void
     {
-        add_action('init', function () use ($config) {
+        add_action('init', static function () use ($config) {
             if (!get_option('menu_'.$config['menu_name'] . '_installed') && !wp_get_nav_menu_object($config['menu_name'])) {
                 $menu_id = wp_create_nav_menu($config['menu_name']);
 
@@ -33,7 +33,7 @@ class Menu
             }
             if(!empty($config['menu_config'])) {
                 $m = $config['menu_config'];
-                add_filter('wp_nav_menu_args', function ($args) use ($config, $m) {
+                add_filter('wp_nav_menu_args', static function ($args) use ($config, $m) {
                     $menu = str_replace("_","-",strtolower($config['location']));
                     if (!empty($args['menu']) && $menu === $args['menu']->slug) {
 

@@ -10,7 +10,6 @@
         "WP_PHP_BINARY": "php",
         "WP_SITEURL": "http://example.test",
         "WP_HOME": "http://example.test",
-        "WPCF7_UPLOADS_TMP_DIR": "/var/www/html/wp-content/themes/example/files",
         "CIVI_SERVER": "",
         "CIVI_PATH": "",
         "CIVI_API_KEY": "",
@@ -29,7 +28,6 @@
       "port": 3092
     },
     "tests": {"config": {
-      "WPCF7_UPLOADS_TMP_DIR": "/var/www/html/wp-content/themes/example/tests/files"
     },
       "themes": [
         "../example-child",

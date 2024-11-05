@@ -1,0 +1,67 @@
+{
+  "nodes": [
+    {
+      "id": "start",
+      "actions": [
+        {
+          "type": "email",
+          "parameters": {
+            "to": "reviewer@example.com",
+            "subject": "New Submission",
+            "message": "A new form has been submitted."
+          }
+        }
+      ],
+      "transitions": [
+        {
+          "condition": {
+            "type": "formField",
+            "parameters": {
+              "field": "approval_status",
+              "value": "approved"
+            }
+          },
+          "nextNode": "approved"
+        },
+        {
+          "condition": {
+            "type": "formField",
+            "parameters": {
+              "field": "approval_status",
+              "value": "rejected"
+            }
+          },
+          "nextNode": "rejected"
+        }
+      ]
+    },
+    {
+      "id": "approved",
+      "actions": [
+        {
+          "type": "statusChange",
+          "parameters": {
+            "status": "Approved"
+          }
+        }
+      ],
+      "transitions": []
+    },
+    {
+      "id": "rejected",
+      "actions": [
+        {
+          "type": "custom",
+          "parameters": {
+            "endpoint": "https://api.example.com/notify",
+            "data": {
+              "message": "Form has been rejected."
+            }
+          }
+        }
+      ],
+      "transitions": []
+    }
+  ],
+  "startNode": "start"
+}

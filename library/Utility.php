@@ -257,48 +257,97 @@ class Utility
     }
 
     /**
-     * Function to enqueue scripts and styles.
+     * Enqueue scripts and styles intelligently based on their source.
      *
-     * @param string $handle    Name of the script or style (should be unique as it is used to identify the script or style).
-     * @param string $relpath   Relative path or full URL to the script or style.
-     * @param string|null $type Type of the file ('script', 'style', 'auto', or null). If 'auto' or null, type is inferred from file extension.
-     * @param array $my_deps    Array of the handles of all the registered scripts that this script depends on,
-     *                          i.e., scripts that must be loaded before this script.
-     *                          It's an empty array by default.
-     * @param bool $in_footer   Whether to enqueue the script before </body> instead of in the <head>.
-     *                          `false` is default, which places it in the <head>.
-     *                          `true` places it before the closing </body> tag.
-     *
-     * @return void
+     * @param string $handle    Unique handle for the asset.
+     * @param string $relpath   Relative path to the asset file or absolute URL.
+     * @param string $type      Type of the asset: 'auto', 'script', 'style'.
+     * @param array  $deps      Dependencies for the asset.
+     * @param bool   $in_footer Whether to enqueue the script in the footer.
      */
-    public static function Enqueuer($handle, $relpath, $type='auto', $my_deps=array(), $in_footer = true): void
-    {
-        // If relpath starts with a leading slash, remove it
+    public static function Enqueuer(
+        string $handle,
+        string $relpath,
+        string $type = 'auto',
+        array $deps = [],
+        bool $in_footer = true
+    ): void {
+        // Normalize the relative path by removing leading slashes
         $relpath = ltrim($relpath, '/');
 
-        if (parse_url($relpath, PHP_URL_SCHEME) === null){
-            // if relpath doesn't contain a scheme (http, https, ftp etc), it means it's a relative URL
-            $uri = get_stylesheet_directory_uri() . '/' . $relpath;
-            $vsn = filemtime(get_theme_file_path($relpath));
-        } else {
-            // if it does contain a scheme, it's an absolute URL, so don't modify it
+        // Helper to check if URL is absolute
+        $is_absolute_url = static function (string $url): bool {
+            return (bool)parse_url($url, PHP_URL_SCHEME);
+        };
+
+        // Helper to get base paths (URL and filesystem path) for the caller's plugin or theme directory
+        $get_base_paths = static function (string $relpath): ?array {
+            $file_path = realpath(__FILE__);
+
+            // Get the plugins directory path
+            $plugins_dir = realpath(WP_PLUGIN_DIR);
+
+            // Get the themes directory path
+            $themes_dir = realpath(get_theme_root());
+
+            if (strpos($file_path, $plugins_dir) === 0) {
+                // File is in the plugins directory
+                $relative_path = substr($file_path, strlen($plugins_dir) + 1);
+                $plugin_folder = explode(DIRECTORY_SEPARATOR, $relative_path)[0];
+
+                $plugin_base_path = $plugins_dir . DIRECTORY_SEPARATOR . $plugin_folder;
+                $plugin_base_url = plugins_url($plugin_folder);
+
+                return [
+                    'url'  => $plugin_base_url . '/' . ltrim($relpath, '/'),
+                    'path' => $plugin_base_path . DIRECTORY_SEPARATOR . ltrim($relpath, '/'),
+                ];
+            } elseif (strpos($file_path, $themes_dir) === 0) {
+                // File is in the themes directory
+                $relative_path = substr($file_path, strlen($themes_dir) + 1);
+                $theme_folder = explode(DIRECTORY_SEPARATOR, $relative_path)[0];
+
+                $theme_base_path = $themes_dir . DIRECTORY_SEPARATOR . $theme_folder;
+                $theme_base_url = get_theme_root_uri() . '/' . $theme_folder;
+
+                return [
+                    'url'  => $theme_base_url . '/' . ltrim($relpath, '/'),
+                    'path' => $theme_base_path . DIRECTORY_SEPARATOR . ltrim($relpath, '/'),
+                ];
+            }
+
+            return null; // File is not in plugin or theme directory
+        };
+
+
+        // Determine if the relpath is an absolute URL
+        if ($is_absolute_url($relpath)) {
             $uri = $relpath;
-            $vsn = null; // or provide a version number in some other way
-        }
-        // Determine file type based on extension if 'auto' is selected
-        if ($type === 'auto' || is_null($type)) {
-            $extension = pathinfo($uri, PATHINFO_EXTENSION);
-            if ($extension === 'js') {
-                $type = 'script';
-            } elseif ($extension === 'css') {
-                $type = 'style';
+            $file_path = null; // No file path needed for absolute URLs
+        } else {
+            $caller_paths = $get_base_paths($relpath);
+            self::Log($caller_paths);
+            if ($caller_paths && file_exists($caller_paths['path'])) {
+                $uri = $caller_paths['url'];
+                $file_path = $caller_paths['path'];
+            } else {
+                self::Log("Enqueuer: File '{$relpath}' not found in plugin or theme directories.");
+                return;
             }
         }
 
-        if($type === 'script') {
-            wp_enqueue_script($handle, $uri, $my_deps, $vsn, $in_footer);
-        } else if($type === 'style') {
-            wp_enqueue_style($handle, $uri, $my_deps, $vsn, $in_footer);
+        // If file_path is set, get the file modification time for versioning
+        $version = $file_path && file_exists($file_path) ? filemtime($file_path) : md5($file_path);
+        // Determine file type based on extension if 'auto' is selected
+        if ($type === 'auto' || is_null($type)) {
+            $extension = pathinfo(parse_url($uri, PHP_URL_PATH), PATHINFO_EXTENSION);
+            $type = $extension === 'js' ? 'script' : ($extension === 'css' ? 'style' : '');
+        }
+        // Enqueue the script or style based on the determined type
+        if ($type === 'script') {
+            wp_enqueue_script($handle, $uri, $deps, $version, $in_footer);
+        } elseif ($type === 'style') {
+            wp_enqueue_style($handle, $uri, $deps, $version);
         } else {
             self::Log("Enqueuer: Unknown file type '{$type}' for file '{$relpath}'.");
         }
