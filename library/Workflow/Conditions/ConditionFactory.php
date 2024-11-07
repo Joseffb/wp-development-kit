@@ -18,6 +18,6 @@ class ConditionFactory {
             return new $appClass($parameters);
         }
 
-        throw new \Exception("Condition class for type '$type' not found.");
+        throw new \RuntimeException("Condition class for type '$type' not found.");
     }
 }

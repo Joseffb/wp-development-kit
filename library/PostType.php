@@ -65,7 +65,7 @@ class PostType
                             'show_as_admin_filter'=>true
                         ]);
                     }
-                    Shadow::CreateRelationship($post_type_name, $machine_tax_name);
+                    Shadow::create_relationship($post_type_name, $machine_tax_name);
                 }
             }
         });

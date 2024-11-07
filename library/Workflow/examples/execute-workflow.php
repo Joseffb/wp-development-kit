@@ -2,8 +2,8 @@
 use WDK\Workflow\WorkflowEngine;
 use YourApp\Workflow\Definitions\WorkflowDefinition;
 
-// Register the custom action with the factory
-add_filter('wdk_workflow_action_class', function($className, $type, $parameters) {
+// Register the custom action with the factory. Add conditions same way.
+add_filter('wdk_workflow_action_class', static function($className, $type, $parameters) {
     if ($type === 'custom') {
         return '\\YourApp\\Workflow\\Actions\\CustomAction';
     }

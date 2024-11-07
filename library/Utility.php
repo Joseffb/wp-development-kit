@@ -326,7 +326,6 @@ class Utility
             $file_path = null; // No file path needed for absolute URLs
         } else {
             $caller_paths = $get_base_paths($relpath);
-            self::Log($caller_paths);
             if ($caller_paths && file_exists($caller_paths['path'])) {
                 $uri = $caller_paths['url'];
                 $file_path = $caller_paths['path'];

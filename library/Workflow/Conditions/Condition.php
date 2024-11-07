@@ -15,5 +15,5 @@ abstract class Condition {
      * @param array $context Contextual data passed through the workflow.
      * @return bool True if condition is met, false otherwise.
      */
-    abstract public function evaluate($context);
+    abstract public function evaluate(array $context): bool;
 }
