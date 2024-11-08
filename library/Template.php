@@ -242,34 +242,135 @@ class Template
         }
     }
 
-    private static function handle_single($post, $template = [], $base = 'single'): array
+    private static function handle_single($post, mixed $template, $base = 'single'): array
     {
-        $template = is_array($template) ? $template : [$template];
-        array_unshift($template, "{$base}-{$post->post_type}.twig", "{$base}.twig");
+        // Ensure the template array has fallback values
+        if (empty($template)) {
+            $template = ["index.twig", "{$base}.twig"];
+        } else if(!is_array($template)) {
+            $template = str_contains($template, '.twig')?$template:$template.".twig";
+            $template = ["index.twig", $template, "{$base}.twig"];
+        }
+
+        // Add post type-specific template
+        array_unshift($template, "{$base}-{$post->post_type}.twig");
+
+        // Check for categories associated with the post
+        $categories = wp_get_post_categories($post->ID, ['orderby' => 'term_order']);
+        if (!empty($categories)) {
+            $parent_cat = get_category($categories[0]);
+
+            // Process parent categories to add templates based on hierarchy
+            if ($parent_cat) {
+                $parent_slug = strtolower(str_replace([' ', '%20'], ['_', '-'], get_category_parents($parent_cat, false, '/', true)));
+                $slug_parts = explode('/', trim($parent_slug, '/'));
+
+                // Add hierarchical templates for parent-child categories
+                if (count($slug_parts) > 1) {
+                    $hierarchical_slug = implode('--', $slug_parts);
+                    array_unshift($template, "{$base}-{$hierarchical_slug}.twig");
+                }
+
+                // Add top-level category template
+                array_unshift($template, "{$base}-{$slug_parts[0]}.twig");
+            }
+        }
+        // Insert password-protected template if required
+        if (post_password_required($post->ID)) {
+            array_unshift($template, "{$base}-password.twig");
+            array_unshift($template, "{$base}-{$post->post_type}-password.twig");
+        }
         return $template;
     }
+
 
     private static function handle_page($page, $template = [], $base = 'page'): array
     {
-        $template = is_array($template) ? $template : [$template];
-        array_unshift($template, "{$base}-{$page->post_name}.twig", "{$base}.twig");
+        $override_template = false;
+        if (empty($template) || !is_array($template)) {
+            $override_template = $template;
+            $template = ["index.twig", "base.twig"];
+        }
+
+        // Get the page name from query vars or post object
+        $page_name = get_query_var('page_name') ?: $page->post_name;
+
+        // Extract slug from the current URL without query parameters
+        $url = strtok($_SERVER['REQUEST_URI'], '?');
+        $slug = str_replace(['-', "/", "%20"], ["_", "--", "-"], trim($url, '/'));
+
+        // Add base templates
+        array_unshift($template, "{$base}.twig");
+
+        // Add template based on page name
+        array_unshift($template, "{$base}-" . str_replace(['-', "%20"], ["_", "-"], $page_name) . ".twig");
+
+        // Check for a custom template specified in post meta
+        if ($custom_template = get_post_meta($page->ID, 'template', true)) {
+            array_unshift($template, "{$base}-" . str_replace(['-', "%20"], ["_", "-"], $custom_template) . ".twig");
+        }
+
+        // Add template based on URL slug if not already in the template array
+        if (!empty($slug) && !in_array("{$base}-{$slug}.twig", $template, true)) {
+            array_unshift($template, "{$base}-{$slug}.twig");
+        }
+
+        // Handle override template if provided
+        if (!empty($override_template) && !is_int($override_template)) {
+            $override_template = str_replace(".twig", "", $override_template);
+            array_unshift($template, "{$override_template}.twig");
+        }
+
         return $template;
     }
 
-    private static function handle_taxonomy($template, $base)
+
+    private static function handle_taxonomy($template, $base): array
     {
         $term_id = get_query_var('term');
         $taxonomy_name = get_query_var('taxonomy');
+
+        // Ensure $template is an array
         $template = is_array($template) ? $template : [$template];
-        array_unshift($template, "{$base}-{$taxonomy_name}--{$term_id}.twig", "{$base}-{$taxonomy_name}.twig", "{$base}.twig");
+
+        // Process term ID by replacing certain characters
+        $processed_term_id = str_replace(['-', "%20"], ["_", "-"], $term_id);
+
+        // Add templates to the beginning of the array
+        array_unshift($template, "{$base}.twig");
+        array_unshift($template, "{$base}-{$taxonomy_name}.twig");
+        array_unshift($template, "{$base}-{$taxonomy_name}--{$processed_term_id}.twig");
+
         return $template;
     }
 
-    private static function handle_category($template, $base)
+
+    private static function handle_category($template, $base): array
     {
-        $cat_name = get_query_var('category_name');
+        // Replace hyphens with underscores in category name
+        $cat_name = $parent_name = str_replace('-', "_", get_query_var('category_name'));
+
+        // Ensure $template is an array
         $template = is_array($template) ? $template : [$template];
-        array_unshift($template, "{$base}-{$cat_name}.twig", "{$base}.twig");
+
+        // Add base template
+        array_unshift($template, "{$base}.twig");
+
+        // Add templates for each category associated with the post
+        $categories = get_the_category();
+        if ($categories) {
+            foreach ($categories as $category) {
+                $category_slug = str_replace(['-', "%20"], ["_", "-"], $category->slug);
+                if ($category_slug !== $cat_name) {
+                    array_unshift($template, "{$base}-{$parent_name}--{$category_slug}.twig");
+                }
+            }
+        }
+
+        // Add template based on current category name
+        array_unshift($template, "{$base}-{$cat_name}.twig");
+
         return $template;
     }
+
 }
