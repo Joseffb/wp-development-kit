@@ -653,7 +653,14 @@ class TaxonomyTermHandler implements \ArrayAccess
     {
         unset($this->terms[$offset]);
     }
-
+    public function data (): ?array
+    {
+        return $this->terms;
+    }
+    public function count (): int
+    {
+        return count($this->terms);
+    }
     #[ReturnTypeWillChange] public function offsetGet(mixed $offset): ?TaxonomyTerm
     {
         if (isset($this->terms[$offset])) {
