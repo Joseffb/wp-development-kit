@@ -31,7 +31,7 @@
   "require": {
     "php": ">=7.0 || ^8.0",
     "composer/installers": "~1.12.0",
-    "timber/timber": "^1.22.1"
+    "timber/timber": "1.24.1"
   },
   "suggest": {
     "wp-graphql/wp-graphql": "As a faster and alternative to the built in wp-json and wp-query system",
