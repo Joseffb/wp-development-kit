@@ -2,7 +2,7 @@
   "name": "joseffb/wp-developer-kit",
   "description": "A development library to make creating things in wordpress a lot easier.",
   "license": "MIT",
-  "version": "0.0.55",
+  "version": "0.0.60",
   "keywords": [
     "WordPress",
     "WordPress Plugin",
@@ -29,6 +29,7 @@
     }
   ],
   "require": {
+    "php": ">=7.0 || ^8.0",
     "composer/installers": "~1.12.0",
     "timber/timber": "^1.22.1"
   },
