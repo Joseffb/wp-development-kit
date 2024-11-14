@@ -39,9 +39,6 @@
     "elasticsearch/elasticsearch": "8.7.x-dev",
     "solarium/solarium": "^6.2.8"
   },
-  "require-dev": {
-    "roave/security-advisories": "dev-latest"
-  },
   "config": {
     "allow-plugins": {
       "composer/installers": true
