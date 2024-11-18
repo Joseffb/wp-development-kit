@@ -125,6 +125,16 @@ class Template
 
                 // Determine specific templates based on content type
                 switch ($base) {
+                    case 'home':
+                        $post_type_key = "wdk_process_template_cpt_home";
+                        $post_type_template = self::get_config_value($post_type_key, $post->ID);
+                        $template = ["index.twig", $template, "{$base}.twig"];
+                        if (!empty($post_type_template)) {
+                            $template = is_bool($post_type_template) ? self::handle_single($post, $template, $base) : $post_type_template;
+                        } else {
+                            return false;
+                        }
+                        break;
                     case 'single':
                         $post_type_key = "wdk_process_template_cpt_{$post->post_type}";
                         $post_type_template = self::get_config_value($post_type_key, $post->ID);
