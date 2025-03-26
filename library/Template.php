@@ -233,14 +233,13 @@ class Template
                 }
             }, 99);
             //adds the sidebar function to the twig templates
-            add_filter('timber/twig', static function ($twig) {
-//                $twig->addFunction(new TwigFunction('get_sidebar', ['\Timber\Timber', 'get_widgets']));
-                $twig->addFunction(new TwigFunction('paging', ['\WDK\Query', 'IsPaged']));
-                $twig->addFunction(new TwigFunction('log_it', ['\WDK\Utility', 'Log']));
-                $twig->addFunction(new TwigFunction('get_taxonomy_term_image', ['\WDK\Taxonomy', 'ProcessTermCustomImages']));
-                $twig->addFunction(new TwigFunction('get_wp_header', ['\WDK\Template', 'GetWPHeader']));
-                $twig->addFunction(new TwigFunction('get_wp_footer', ['\WDK\Template', 'GetWPFooter']));
-                return $twig;
+            add_filter('timber/twig', static function ($twig) {    if (!array_key_exists('get_sidebar', $twig->getFunctions())) $twig->addFunction(new TwigFunction('get_sidebar', ['\Timber\Timber', 'get_widgets']));
+                if (!array_key_exists('paging', $twig->getFunctions()))$twig->addFunction(new TwigFunction('paging', ['\WDK\Query', 'IsPaged']));
+                if (!array_key_exists('log_it', $twig->getFunctions()))$twig->addFunction(new TwigFunction('log_it', ['\WDK\Utility', 'Log']));
+                if (!array_key_exists('get_taxonomy_term_image', $twig->getFunctions()))$twig->addFunction(new TwigFunction('get_taxonomy_term_image', ['\WDK\Taxonomy', 'ProcessTermCustomImages']));
+                if (!array_key_exists('get_wp_header', $twig->getFunctions()))$twig->addFunction(new TwigFunction('get_wp_header', ['\WDK\Template', 'GetWPHeader']));
+                if (!array_key_exists('get_wp_footer', $twig->getFunctions()))$twig->addFunction(new TwigFunction('get_wp_footer', ['\WDK\Template', 'GetWPFooter']));
+                return $twig;   return $twig;
             });
         } else {
             add_action('admin_notices', function () {
