@@ -51,7 +51,7 @@ class Template
     /**
      * Retrieve a configuration value with a fallback sequence: constant, post meta, and then option.
      */
-    public static function get_config_value(string $key, ?int $post_id = null, string $type = 'all'): mixed
+    public static function get_config_value(string $key, $post_id = null, string $type = 'all'): mixed
     {
         $globalUseTwig = 'wdk_process_template_global';
         $use_twig_for_all_templates = get_option($globalUseTwig);
@@ -95,7 +95,7 @@ class Template
     /**
      * Determine the template to load.
      */
-    public static function get_template(): mixed
+    public static function get_template($predefined_template = null): mixed
     {
         global $post;
 
@@ -105,10 +105,11 @@ class Template
 
         Utility::Log($_SERVER['REQUEST_URI']);
         $ext = '.twig';
-        $template = ['index.twig'];
+
+        $template = $predefined_template?[$predefined_template, 'index.twig']:['index.twig'];
 
         foreach (self::$templates as $tag => $template_getter) {
-            if (call_user_func($tag)) {
+            if ($tag()) {
                 $base = $template_getter;
                 Utility::Log("Checking template for {$base}");
 
@@ -189,11 +190,11 @@ class Template
     /**
      * Twig template setup
      */
-    public static function Setup($locations = [__DIR__ . '/views']): void
+    public static function Setup($locations = [__DIR__ . '/views'])
     {
         Timber::$locations = $locations;
         if (class_exists(Timber::class)) {
-            add_filter('timber/context', function () {
+            add_filter('timber/context', static function () {
                 $show_templates = self::get_config_value('wdk_debug_show_templates');
                 Utility::Log('inside context hook');
                 $context = Timber::context();
