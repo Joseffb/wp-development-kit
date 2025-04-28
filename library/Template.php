@@ -199,6 +199,26 @@ class Template
                 Utility::Log('inside context hook');
                 $context = Timber::context();
                 $context['page-template'] = $templates = self::get_template();
+                Utility::Log(empty($context['post']));
+                if (!empty($context['posts']) && $context['posts'] instanceof \Timber\PostQuery) {
+                    foreach ($context['posts'] as $i => $post) {
+                        if ($post instanceof \Timber\Post) {
+                            // Clone to be safe
+                            $new_post = clone $post;
+
+                            // Process the post_content
+                            $new_post->post_content = apply_filters('the_content', $post->post_content);
+
+                            // Replace it back into posts array
+                            $context['posts'][$i] = $new_post;
+                        }
+                    }
+
+                    // Optionally also set the first one as 'post' if you need it
+                    if (!empty($context['posts'][0])) {
+                        $context['post'] = $context['posts'][0];
+                    }
+                }
                 if ($templates && (WP_DEBUG || $show_templates)) {
                     Utility::Log($templates, 'Debug Only Message::Twig Template Hooks');
                 }
@@ -249,7 +269,7 @@ class Template
                         Utility::Log($e->getMessage());
                     }
                 }
-                 return $twig;
+                return $twig;
             });
         } else {
             add_action('admin_notices', function () {
