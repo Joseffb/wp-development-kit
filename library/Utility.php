@@ -89,8 +89,7 @@ class Utility
             }
         }
         $note = (string)$note . implode("\n", $note_array);
-        trigger_error($note . "\n" . print_r($log, true), E_USER_NOTICE);
-    }
+        error_log($note . "\n" . print_r($log, true));    }
     /**
      * Enqueue styles and scripts
      * @param string $tax_name
