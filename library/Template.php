@@ -219,11 +219,9 @@ class Template
                         $context['post'] = $context['posts'][0];
                     }
                 }
-                if ($templates) {
-                    if (defined('WP_DEBUG') && WP_DEBUG || $show_templates) Utility::Log($templates, 'Debug Only Message::Twig Template Hooks');
-                }
+
                 $context['post'] = new Post();
-                if (WP_DEBUG || $show_templates) {
+                if (defined('WP_DEBUG') && WP_DEBUG || $show_templates) {
                     $context_hooks = [];
                 }
 
@@ -231,7 +229,7 @@ class Template
                     $context = apply_filters('wdk_context', $context);
                     foreach (array_reverse($templates) as $name) {
                         $filter = 'wdk_context_' . str_replace(".twig", "", $name);
-                        if (WP_DEBUG || $show_templates) {
+                        if (defined('WP_DEBUG') && WP_DEBUG || $show_templates) {
                             $context_hooks[] = $filter;
                         }
                         $context = apply_filters($filter, $context);
