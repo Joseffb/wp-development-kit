@@ -103,7 +103,7 @@ class Template
             return false;
         }
 
-        Utility::Log($_SERVER['REQUEST_URI']);
+        if (defined('WP_DEBUG') && WP_DEBUG) Utility::Log($_SERVER['REQUEST_URI']);
         $ext = '.twig';
 
         $template = $predefined_template?[$predefined_template, 'index.twig']:['index.twig'];
@@ -111,7 +111,7 @@ class Template
         foreach (self::$templates as $tag => $template_getter) {
             if ($tag()) {
                 $base = $template_getter;
-                Utility::Log("Checking template for {$base}");
+                if (defined('WP_DEBUG') && WP_DEBUG) Utility::Log("Checking template for {$base}");
 
                 $template_check_key = "wdk_process_template_{$base}";
                 $template_check = self::get_config_value($template_check_key, $post->ID);
@@ -196,10 +196,10 @@ class Template
         if (class_exists(Timber::class)) {
             add_filter('timber/context', static function () {
                 $show_templates = self::get_config_value('wdk_debug_show_templates');
-                Utility::Log('inside context hook');
+                if (defined('WP_DEBUG') && WP_DEBUG) Utility::Log('inside context hook');
                 $context = Timber::context();
                 $context['page-template'] = $templates = self::get_template();
-                Utility::Log(empty($context['post']));
+                if (defined('WP_DEBUG') && WP_DEBUG) Utility::Log(empty($context['post']));
                 if (!empty($context['posts']) && $context['posts'] instanceof \Timber\PostQuery) {
                     foreach ($context['posts'] as $i => $post) {
                         if ($post instanceof \Timber\Post) {
@@ -219,8 +219,8 @@ class Template
                         $context['post'] = $context['posts'][0];
                     }
                 }
-                if ($templates && (WP_DEBUG || $show_templates)) {
-                    Utility::Log($templates, 'Debug Only Message::Twig Template Hooks');
+                if ($templates) {
+                    if (defined('WP_DEBUG') && WP_DEBUG || $show_templates) Utility::Log($templates, 'Debug Only Message::Twig Template Hooks');
                 }
                 $context['post'] = new Post();
                 if (WP_DEBUG || $show_templates) {
@@ -236,7 +236,7 @@ class Template
                         }
                         $context = apply_filters($filter, $context);
                     }
-                    if (WP_DEBUG || $show_templates) {
+                    if (defined('WP_DEBUG') && WP_DEBUG || $show_templates) {
                         Utility::Log($context_hooks, 'Debug Only Message::Twig Template Context Hooks');
                     }
                 }
@@ -246,7 +246,7 @@ class Template
             add_filter('template_include', function ($template) {
                 $context = Timber::context();
                 if ($context['page-template']) {
-                    Utility::Log($context['page-template']);
+                    if (defined('WP_DEBUG') && WP_DEBUG) Utility::Log($context['page-template']);
                     Timber::render($context['page-template'], $context);
                 } else {
                     return $template;
@@ -288,7 +288,11 @@ class Template
         if (empty($template)) {
             $template = ["index.twig", "{$base}.twig"];
         } else if(!is_array($template)) {
-            $template = str_contains($template, '.twig')?$template:$template.".twig";
+            if (PHP_VERSION_ID >= 80000) {
+                $template = str_contains($template, '.twig') ? $template : $template . '.twig';
+            } else {
+                $template = (strpos($template, '.twig') !== false) ? $template : $template . '.twig';
+            }
             $template = ["index.twig", $template, "{$base}.twig"];
         }
 
