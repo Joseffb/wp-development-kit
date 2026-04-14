@@ -173,6 +173,13 @@ use WP_Term;
 class Shadow
 {
     /**
+     * Prevent duplicate hook registration.
+     *
+     * @var array<string, bool>
+     */
+    private static array $relationships = [];
+
+    /**
      * Registers the shadow taxonomy relationship and hooks.
      *
      * @param string $post_type    Post Type slug.
@@ -181,6 +188,12 @@ class Shadow
      */
     public static function create_relationship(string $post_type, string $taxonomy, array $conditionals = []): void
     {
+        $key = $post_type . '|' . $taxonomy . '|' . md5(wp_json_encode($conditionals));
+        if (!empty(self::$relationships[$key])) {
+            return;
+        }
+        self::$relationships[$key] = true;
+
         add_action('wp_insert_post', self::create_shadow_term($post_type, $taxonomy, $conditionals));
         add_action('set_object_terms', self::create_shadow_term($post_type, $taxonomy, $conditionals));
         add_action('wp_trash_post', self::delete_shadow_term($taxonomy));
@@ -306,6 +319,9 @@ class Shadow
     {
         return function ($post_id) use ($taxonomy) {
             $post = get_post($post_id);
+            if (!$post instanceof WP_Post) {
+                return false;
+            }
             $term_id = self::get_associated_term_id($post);
 
             if (!$term_id) {
@@ -331,10 +347,15 @@ class Shadow
 
             if (empty($other_posts)) {
                 // No other posts associated, safe to delete term
+                delete_term_meta((int)$term_id, 'shadow_post_id');
                 return wp_delete_term($term_id, $taxonomy);
             } else {
                 // Remove the association from the deleted post
                 delete_post_meta($post_id, 'shadow_term_id');
+                $next_post_id = (int)$other_posts[0];
+                if ($next_post_id > 0) {
+                    update_term_meta((int)$term_id, 'shadow_post_id', $next_post_id);
+                }
                 return false;
             }
         };
@@ -368,7 +389,13 @@ class Shadow
 
         if (empty($other_posts)) {
             // No other posts associated, safe to delete term
+            delete_term_meta($term_id, 'shadow_post_id');
             wp_delete_term($term_id, $taxonomy);
+        } else {
+            $next_post_id = (int)$other_posts[0];
+            if ($next_post_id > 0) {
+                update_term_meta($term_id, 'shadow_post_id', $next_post_id);
+            }
         }
 
         // Remove the association from the post
@@ -400,6 +427,7 @@ class Shadow
 
         // Associate the term with the post
         update_post_meta($post->ID, 'shadow_term_id', $term_id);
+        update_term_meta((int)$term_id, 'shadow_post_id', $post->ID);
 
         return ['term_id' => $term_id];
     }
@@ -446,8 +474,11 @@ class Shadow
      *
      * @return int|false The term ID on success, false on failure.
      */
-    public static function get_associated_term_id(WP_Post $post): bool|int
+    public static function get_associated_term_id($post): bool|int
     {
+        if (!$post instanceof WP_Post) {
+            return false;
+        }
         return get_post_meta($post->ID, 'shadow_term_id', true) ?: false;
     }
 
@@ -474,6 +505,39 @@ class Shadow
 
         $posts = get_posts($args);
         return !empty($posts) ? $posts : false;
+    }
+
+    /**
+     * Gets the post associated with a shadow taxonomy term.
+     *
+     * @param WP_Term|int $term Term object or term ID.
+     *
+     * @return WP_Post|false
+     */
+    public static function get_associated_post($term): WP_Post|bool
+    {
+        if (is_int($term)) {
+            $term = get_term($term);
+        }
+
+        if (!$term instanceof WP_Term) {
+            return false;
+        }
+
+        $post_id = (int)get_term_meta($term->term_id, 'shadow_post_id', true);
+        if ($post_id > 0) {
+            $post = get_post($post_id);
+            if ($post instanceof WP_Post) {
+                return $post;
+            }
+        }
+
+        $associated_posts = self::get_associated_posts($term);
+        if (!empty($associated_posts[0]) && $associated_posts[0] instanceof WP_Post) {
+            return $associated_posts[0];
+        }
+
+        return false;
     }
 
     /**

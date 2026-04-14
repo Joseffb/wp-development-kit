@@ -27,7 +27,7 @@ class Post {
 				'post_author'    => ! empty( $meta['post_author'] ) ? $meta['post_author'] : 1,
 				'post_title'     => ucwords( $title ),
 				'post_name'      => ! empty( $meta['slug'] ) ? sanitize_title( $meta['slug'] ) : sanitize_title( $title ),
-				'post_status'    => ! empty( $meta['post_status'] ) ? $meta['status'] : 'publish',
+				'post_status'    => ! empty( $meta['post_status'] ) ? $meta['post_status'] : 'publish',
 				'post_content'   => $content,
 				'post_type'      => $type,
 				'post_parent'    => $parent,
