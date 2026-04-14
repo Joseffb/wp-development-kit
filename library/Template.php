@@ -2,7 +2,6 @@
 
 namespace WDK;
 
-use Timber\Timber;
 use Twig\TwigFunction;
 
 class Template
@@ -193,16 +192,16 @@ class Template
     public static function Setup($locations = [__DIR__ . '/views'])
     {
         TimberBridge::set_locations($locations);
-        if (class_exists(Timber::class)) {
+        if (TimberBridge::is_available()) {
             add_filter('timber/context', static function () {
                 $show_templates = self::get_config_value('wdk_debug_show_templates');
                 if (defined('WP_DEBUG') && WP_DEBUG) Utility::Log('inside context hook');
                 $context = TimberBridge::context();
                 $context['page-template'] = $templates = self::get_template();
                 if (defined('WP_DEBUG') && WP_DEBUG) Utility::Log(empty($context['post']));
-                if (!empty($context['posts']) && $context['posts'] instanceof \Timber\PostQuery) {
+                if (!empty($context['posts']) && TimberBridge::is_post_query($context['posts'])) {
                     foreach ($context['posts'] as $i => $post) {
-                        if ($post instanceof \Timber\Post) {
+                        if (TimberBridge::is_post($post)) {
                             // Clone to be safe
                             $new_post = clone $post;
 
@@ -253,7 +252,7 @@ class Template
             //adds the sidebar function to the twig templates
             add_filter('timber/twig', static function ($twig) {
                 $funcs = [
-                    'get_sidebar'=> ['\Timber\Timber', 'get_widgets'],
+                    'get_sidebar'=> ['\WDK\TimberBridge', 'get_widgets'],
                     'paging'=> ['\WDK\Query', 'IsPaged'],
                     'log_it'=> ['\WDK\Utility', 'Log'],
                     'get_taxonomy_term_image'=> ['\WDK\Taxonomy', 'ProcessTermCustomImages'],

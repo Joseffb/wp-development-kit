@@ -5,7 +5,7 @@ Plugin URI: https://github.com/Joseffb/wp-development-kit
 Description: Installs the WP Development Kit. Passive library for WordPress used by other plugins and themes
 Author: Joseff Betancourt
 Author URI: https://joseffb.com/
-Version: 0.1
+Version: 0.2.0
 Text Domain: wdk
 License: MIT
 */
@@ -17,7 +17,7 @@ require($autoloader);
 
 use WDK\System;
 
-const WDK_VERSION = '0.0.8';
+const WDK_VERSION = '0.2.0';
 const WDK_PLUGIN = __FILE__;
 
 define('WDK_PLUGIN_BASENAME',
