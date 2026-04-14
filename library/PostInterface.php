@@ -371,7 +371,11 @@ class PostInterface
                 if (method_exists($search, 'PostInterface_get')) {
                     return $search->PostInterface_get($this->query_args);
                 }
-                $post = $search->search("", $this->query_args)->posts[0];
+                $results = $search->search("", $this->query_args);
+                if (empty($results->posts) || empty($results->posts[0])) {
+                    return null;
+                }
+                $post = $results->posts[0];
             } else {
                 $query = new WP_Query($this->query_args);
                 if (!$query->have_posts()) {
@@ -569,7 +573,7 @@ class TaxonomyHandler
     public function __isset($taxonomy)
     {
         if(empty($this->taxonomies)) {
-            return null;
+            return false;
         }
         return in_array($taxonomy, $this->taxonomies);
     }
@@ -617,7 +621,7 @@ class TaxonomyHandler
         $taxonomy_data = [];
         foreach ($this->taxonomies as $taxonomy) {
             $terms = get_the_terms($this->post_id, $taxonomy);
-            $taxonomy_data[$taxonomy] = $terms ?: [];
+            $taxonomy_data[$taxonomy] = (is_array($terms) && !is_wp_error($terms)) ? $terms : [];
         }
         return $taxonomy_data;
     }

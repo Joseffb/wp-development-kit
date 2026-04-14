@@ -89,7 +89,7 @@ class Taxonomy
         }
 
         if (!(Utility::IsTrue($options['hierarchical']))) {
-            array_shift($options);
+            unset($options['hierarchical']);
         }
         add_action('init', function () use ($tax_name_plural, $tax_machine_name, $post_types, $options) {
             if (!taxonomy_exists($tax_machine_name)) {
@@ -207,24 +207,16 @@ class Taxonomy
         $taxonomy = strtolower(str_replace(" ", "_", $taxonomy));
 
         if (is_array($term)) {
-            //Log::Write($config, 'C:');
             foreach ($term as $k => $v) {
-                //Log::Write($k, 'K:');
-                //Log::Write($v, 'V:');
-                switch ($v) {
-                    case is_array($v):
-                        //Log::Write("Mode: Array\nK:  $k \nV: $v\n");
-                        if (is_int($k)) {
-                            self::CreateTerm($taxonomy, $v, $parent_term);
-                        } else {
-                            self::CreateTerm($taxonomy, $k, $parent_term);
-                            self::CreateTerm($taxonomy, $v, $k);
-                        }
-                        break;
-                    case is_string($v);
-                        //Log::Write("Mode: String\nK:  $k \nV: $v\n");
+                if (is_array($v)) {
+                    if (is_int($k)) {
                         self::CreateTerm($taxonomy, $v, $parent_term);
-                        break;
+                    } else {
+                        self::CreateTerm($taxonomy, $k, $parent_term);
+                        self::CreateTerm($taxonomy, $v, $k);
+                    }
+                } elseif (is_string($v) || is_numeric($v)) {
+                    self::CreateTerm($taxonomy, (string)$v, $parent_term);
                 }
             }
             return true;

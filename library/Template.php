@@ -2,7 +2,6 @@
 
 namespace WDK;
 
-use Timber\Post;
 use Timber\Timber;
 use Twig\TwigFunction;
 
@@ -98,6 +97,7 @@ class Template
     public static function get_template($predefined_template = null): mixed
     {
         global $post;
+        $post_id = (!empty($post) && !empty($post->ID)) ? (int)$post->ID : null;
 
         if (preg_match('~(\.css|\.js|\.map|\.pdf|\.png|\.jpg|\.gif|.ttf|\.doc|\.xls|\.ico|\.woff2|\.woff|\.svg|admin-ajax.php)~', $_SERVER['REQUEST_URI'])) {
             return false;
@@ -114,7 +114,7 @@ class Template
                 if (defined('WP_DEBUG') && WP_DEBUG) Utility::Log("Checking template for {$base}");
 
                 $template_check_key = "wdk_process_template_{$base}";
-                $template_check = self::get_config_value($template_check_key, $post->ID);
+                $template_check = self::get_config_value($template_check_key, $post_id);
 
                 if (!Utility::IsTrue($template_check)) {
                     if ($template_check !== false) {
@@ -128,7 +128,7 @@ class Template
                 switch ($base) {
                     case 'home':
                         $post_type_key = "wdk_process_template_cpt_home";
-                        $post_type_template = self::get_config_value($post_type_key, $post->ID);
+                        $post_type_template = self::get_config_value($post_type_key, $post_id);
                         $template = ["index.twig", $template, "{$base}.twig"];
                         if (!empty($post_type_template)) {
                             $template = is_bool($post_type_template) ? self::handle_single($post, $template, $base) : $post_type_template;
@@ -138,7 +138,7 @@ class Template
                         break;
                     case 'single':
                         $post_type_key = "wdk_process_template_cpt_{$post->post_type}";
-                        $post_type_template = self::get_config_value($post_type_key, $post->ID);
+                        $post_type_template = self::get_config_value($post_type_key, $post_id);
                         if (!empty($post_type_template)) {
                             $template = is_bool($post_type_template) ? self::handle_single($post, $template, $base) : $post_type_template;
                         } else {
@@ -148,7 +148,7 @@ class Template
 
                     case 'page':
                         $page_template_key = "wdk_process_template_page_{$post->post_name}";
-                        $page_template = self::get_config_value($page_template_key, $post->ID);
+                        $page_template = self::get_config_value($page_template_key, $post_id);
                         $template = $page_template ?: $template;
                         $template = self::handle_page($post, $template, $base);
                         break;
@@ -192,12 +192,12 @@ class Template
      */
     public static function Setup($locations = [__DIR__ . '/views'])
     {
-        Timber::$locations = $locations;
+        TimberBridge::set_locations($locations);
         if (class_exists(Timber::class)) {
             add_filter('timber/context', static function () {
                 $show_templates = self::get_config_value('wdk_debug_show_templates');
                 if (defined('WP_DEBUG') && WP_DEBUG) Utility::Log('inside context hook');
-                $context = Timber::context();
+                $context = TimberBridge::context();
                 $context['page-template'] = $templates = self::get_template();
                 if (defined('WP_DEBUG') && WP_DEBUG) Utility::Log(empty($context['post']));
                 if (!empty($context['posts']) && $context['posts'] instanceof \Timber\PostQuery) {
@@ -220,7 +220,7 @@ class Template
                     }
                 }
 
-                $context['post'] = new Post();
+                $context['post'] = TimberBridge::get_post();
                 if (defined('WP_DEBUG') && WP_DEBUG || $show_templates) {
                     $context_hooks = [];
                 }
@@ -242,10 +242,10 @@ class Template
             });
 
             add_filter('template_include', function ($template) {
-                $context = Timber::context();
+                $context = TimberBridge::context();
                 if ($context['page-template']) {
                     if (defined('WP_DEBUG') && WP_DEBUG) Utility::Log($context['page-template']);
-                    Timber::render($context['page-template'], $context);
+                    TimberBridge::render($context['page-template'], $context);
                 } else {
                     return $template;
                 }

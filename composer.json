@@ -44,6 +44,13 @@
       "composer/installers": true
     }
   },
+  "scripts": {
+    "test": [
+      "php tests/unit/taxonomy_create_term_test.php",
+      "php tests/integration/shadow_relationship_test.php",
+      "php tests/e2e/postinterface_search_null_test.php"
+    ]
+  },
   "repositories": [
     {
       "type": "composer",
