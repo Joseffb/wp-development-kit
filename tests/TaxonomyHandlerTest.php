@@ -1,17 +1,16 @@
 <?php
 
-
-use PHPUnit\Framework\TestCase;
 use WDK\PostInterface;
 use WDK\TaxonomyHandler;
 
-class TaxonomyHandlerTest extends TestCase
+class TaxonomyHandlerTest extends WdkTestCase
 {
     protected static $post_id;
     protected static $term_id;
 
     public static function setUpBeforeClass(): void
     {
+        self::resetWordPressState();
         // Register a custom taxonomy for testing
         register_taxonomy('test_taxonomy', 'post', [
             'label' => 'Test Taxonomy',

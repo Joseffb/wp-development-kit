@@ -9,76 +9,12 @@ class Search
     protected WP_Search_Provider $search_provider;
 
     /**
-     * @param $method
-     * @param $arguments
-     * @return mixed
+     * @param string|WP_Search_Provider|null $provider
+     * @param array $provider_args
      */
-    public function __call($method, $arguments)
+    public function __construct(string|WP_Search_Provider|null $provider = null, array $provider_args = [])
     {
-        // Handle the undefined method call
-        if (($this->search_provider ?? null) && method_exists($this->search_provider, $method)) {
-            return call_user_func_array([$this->search_provider, $method], $arguments);
-        }
-
-        throw new RuntimeException("'$method' does not exist in the current search provider", 10403);
-    }
-
-    /**
-     * @return string|null defaults to WDK
-     */
-    private function get_calling_namespace(): ?string
-    {
-        $backtrace = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 2);
-        $caller = $backtrace[1];
-
-        if (isset($caller['class'])) {
-            try {
-                return (new \ReflectionClass($caller['class']))->getNamespaceName();
-            } catch (\ReflectionException $e) {
-                return 'WDK';
-            }
-        }
-
-        return null;
-    }
-
-    /**
-     * @param string|null $provider
-     * @param array $args
-     */
-    public function __construct(?string $provider = null, array $args = [])
-    {
-        // Default provider if none is provided
-        $provider = $provider ?? '\\WDK\\WP_Local_Search_Provider';
-
-        Utility::Log($provider);
-        // Check if the given class exists
-        if ($provider && !class_exists($provider)) {
-            // Check if the WDK namespaced class exists
-            $wdkNamespacedProvider = "\\WDK\\$provider";
-            if (class_exists($wdkNamespacedProvider)) {
-                Utility::Log($wdkNamespacedProvider);
-                $this->search_provider = $provider = $wdkNamespacedProvider;
-            }
-            // Check if the called_namespaced class exists
-            else {
-                $callingNamespace = $this->get_calling_namespace();
-                //echo "Calling namespace: " . $callingNamespace . PHP_EOL;
-                $calledNamespacedProvider = $callingNamespace . '\\' . $provider;
-                Utility::Log($calledNamespacedProvider);
-                if (class_exists($calledNamespacedProvider)) {
-                    $this->search_provider = $provider = $calledNamespacedProvider;
-                } else {
-                    throw new RuntimeException('Invalid search provider class provided: ' . $provider);
-                }
-            }
-        }
-
-        if (empty($args)) {
-            $this->set_search_provider($provider);
-        } else {
-            $this->set_search_provider( new $provider(...$args));
-        }
+        $this->set_search_provider($provider, $provider_args);
     }
 
     /**
@@ -87,9 +23,19 @@ class Search
      * @param $provider
      * @return \WP_Query
      */
-    public static function find($query, $args = [], $provider = 'WP_Local_Search_Provider'): \WP_Query
+    public static function find($query, $args = [], string|WP_Search_Provider|null $provider = null): \WP_Query
     {
-        return (new self($provider, $args))->search($query,$args);
+        $providerArgs = [];
+        if (isset($args['provider_args']) && is_array($args['provider_args'])) {
+            $providerArgs = $args['provider_args'];
+            unset($args['provider_args']);
+        } elseif (isset($args['provider_constructor_args']) && is_array($args['provider_constructor_args'])) {
+            Compatibility::warn(__METHOD__, 'provider_constructor_args is deprecated. Use provider_args instead.');
+            $providerArgs = $args['provider_constructor_args'];
+            unset($args['provider_constructor_args']);
+        }
+
+        return (new self($provider, $providerArgs))->search($query, $args);
     }
 
     /**
@@ -97,27 +43,15 @@ class Search
      * @param $args
      * @return void
      */
-    public function set_search_provider($search_provider, $args = []): void
+    public function set_search_provider(string|WP_Search_Provider|null $search_provider, array $args = []): void
     {
-        if (is_string($search_provider)) {
-            if (!class_exists($search_provider)) {
-                throw new RuntimeException('Invalid search provider class provided.');
-            }
-
-            if (!is_subclass_of($search_provider, WP_Search_Provider::class)) {
-                throw new RuntimeException('Search provider class must extend WP_Search_Provider.');
-            }
-
-            if (!empty($args)) {
-                $this->search_provider = new $search_provider(...$args);
-            } else {
-                $this->search_provider = new $search_provider();
-            }
-        } elseif ($search_provider instanceof WP_Search_Provider) {
-            $this->search_provider = $search_provider;
-        } else {
-            throw new RuntimeException('Invalid search provider type provided. Must be a class name or an instance of WP_Search_Provider.');
-        }
+        $this->search_provider = ProviderResolver::resolve(
+            $search_provider,
+            '\\WDK\\WP_Local_Search_Provider',
+            WP_Search_Provider::class,
+            $args,
+            'search provider'
+        );
     }
 
     /**
@@ -127,7 +61,22 @@ class Search
      */
     public function search($query, array $args = [])
     {
+        unset($args['provider_args'], $args['provider_constructor_args']);
         return $this->search_provider->search($query, $args);
+    }
+
+    /**
+     * @param $method
+     * @param $arguments
+     * @return mixed
+     */
+    public function __call($method, $arguments)
+    {
+        if (($this->search_provider ?? null) && method_exists($this->search_provider, $method)) {
+            return call_user_func_array([$this->search_provider, $method], $arguments);
+        }
+
+        throw new RuntimeException("'$method' does not exist in the current search provider", 10403);
     }
 
     /**

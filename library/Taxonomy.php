@@ -306,18 +306,14 @@ class Taxonomy
     static function QueryAdminMenuFilters($query, $type, $tax_machine_name): void
     {
         global $pagenow;
-        if (isset($_GET['post_type'])) {
-            $pt = $_GET['post_type'];
-        } else {
-            $pt = 'post';
-        }
+        $pt = isset($_GET['post_type']) ? sanitize_key((string) $_GET['post_type']) : 'post';
         $hookName = strtolower($tax_machine_name. "_FIELD_VALUE") ;
         if (!empty($_GET[$hookName]) && $pagenow === 'edit.php' && $type === $pt && is_admin()) {
             $query->query_vars['tax_query'] = array(
                 array(
                     'taxonomy' => $tax_machine_name,
                     'field' => 'slug',
-                    'terms' => $_GET[$hookName]
+                    'terms' => sanitize_title((string) $_GET[$hookName])
                 )
             );
         }
@@ -334,12 +330,16 @@ class Taxonomy
     public
     static function SaveTermImage($term_id): void
     {
-        global $wpdb;
-        $post_field_name = 'taxonomy-image-id';
-        $field_value = $wpdb->_escape($_POST[$post_field_name]);
+        $taxonomy = self::resolveTermImageTaxonomy((int) $term_id);
+        if (!self::canMutateTermImage($taxonomy) || !self::hasValidTermImageNonce()) {
+            return;
+        }
 
-        if (isset($field_value) && is_int((int)$field_value)) {
-            add_term_meta($term_id, $post_field_name, absint($field_value), true);
+        $post_field_name = 'taxonomy-image-id';
+        $field_value = self::termImageIdFromRequest();
+
+        if ($field_value > 0) {
+            add_term_meta($term_id, $post_field_name, $field_value, true);
         }
     }
 
@@ -355,10 +355,11 @@ class Taxonomy
         $post_field_name = 'taxonomy-image-id';
         ?>
         <div class="form-field term-group">
-            <label for="<?= $post_field_name ?>>"><?php _e('Image', 'wdk'); ?></label>
-            <input type="hidden" id="<?= $post_field_name ?>" name="<?= $post_field_name ?>"
+            <label for="<?= esc_attr($post_field_name) ?>"><?php _e('Image', 'wdk'); ?></label>
+            <?php wp_nonce_field('wdk_term_image', 'wdk_term_image_nonce'); ?>
+            <input type="hidden" id="<?= esc_attr($post_field_name) ?>" name="<?= esc_attr($post_field_name) ?>"
                    class="custom_media_url"
-                   value="">
+                    value="">
             <div id="category-image-wrapper"></div>
             <p>
                 <input type="button" class="button button-secondary tax_media_button"
@@ -389,11 +390,12 @@ class Taxonomy
         ?>
         <tr class="form-field term-group-wrap">
             <th scope="row">
-                <label for="<?= $post_field_name ?>"><?php _e('Image', 'wdk'); ?></label>
+                <label for="<?= esc_attr($post_field_name) ?>"><?php _e('Image', 'wdk'); ?></label>
             </th>
             <td>
+                <?php wp_nonce_field('wdk_term_image', 'wdk_term_image_nonce'); ?>
                 <?php $image_id = get_term_meta($term->term_id, $post_field_name, true); ?>
-                <input type="hidden" id="<?= $post_field_name ?>" name="<?= $post_field_name ?>"
+                <input type="hidden" id="<?= esc_attr($post_field_name) ?>" name="<?= esc_attr($post_field_name) ?>"
                        value="<?php echo esc_attr($image_id); ?>">
                 <div id="category-image-wrapper">
                     <?php if ($image_id) { ?>
@@ -424,15 +426,50 @@ class Taxonomy
     public
     static function ProcessTermImageUpdate($term_id): void
     {
-        global $wpdb;
-        $term = get_term_by("term_id", $term_id);
+        $taxonomy = self::resolveTermImageTaxonomy((int) $term_id);
+        if (!self::canMutateTermImage($taxonomy) || !self::hasValidTermImageNonce()) {
+            return;
+        }
+
         $post_field_name = 'taxonomy-image-id';
-        $field_value = $wpdb->_escape($_POST[$post_field_name]);
-        if (isset($field_value) && is_int((int)$field_value)) {
-            update_term_meta($term_id, $post_field_name, absint($field_value));
+        $field_value = self::termImageIdFromRequest();
+        if ($field_value > 0) {
+            update_term_meta($term_id, $post_field_name, $field_value);
         } else {
             update_term_meta($term_id, $post_field_name, '');
         }
+    }
+
+    private static function resolveTermImageTaxonomy(int $termId): ?string
+    {
+        if (!empty($_POST['taxonomy'])) {
+            return sanitize_key((string) $_POST['taxonomy']);
+        }
+
+        $term = get_term($termId);
+        return $term->taxonomy ?? null;
+    }
+
+    private static function hasValidTermImageNonce(): bool
+    {
+        return !empty($_POST['wdk_term_image_nonce']) && wp_verify_nonce((string) $_POST['wdk_term_image_nonce'], 'wdk_term_image');
+    }
+
+    private static function canMutateTermImage(?string $taxonomy): bool
+    {
+        if ($taxonomy === null) {
+            return false;
+        }
+
+        $taxonomyObject = get_taxonomy($taxonomy);
+        $capability = $taxonomyObject->cap->manage_terms ?? 'manage_categories';
+
+        return current_user_can($capability);
+    }
+
+    private static function termImageIdFromRequest(): int
+    {
+        return isset($_POST['taxonomy-image-id']) ? absint((string) $_POST['taxonomy-image-id']) : 0;
     }
 
     /**

@@ -1,16 +1,16 @@
 <?php
 
-use PHPUnit\Framework\TestCase;
 use WDK\PostInterface;
 use WDK\RelationshipHandler;
 
-class RelationshipHandlerTest extends TestCase
+class RelationshipHandlerTest extends WdkTestCase
 {
     protected static $parent_post_id;
     protected static $child_post_id;
 
     public static function setUpBeforeClass(): void
     {
+        self::resetWordPressState();
         // Create a parent post
         $parent_post_arr = [
             'post_title'   => 'Parent Post',

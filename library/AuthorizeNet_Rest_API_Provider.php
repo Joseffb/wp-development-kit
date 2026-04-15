@@ -4,86 +4,107 @@ namespace WDK;
 
 class AuthorizeNet_Rest_API_Provider extends Payment_Provider
 {
-    private $api_login_id;
-    private $transaction_key;
-    private $apiUrl;
+    private string $api_login_id;
+    private string $transaction_key;
+    private string $api_url;
 
-    /**
-     * @param $apiLoginId
-     * @param $transactionKey
-     * @param bool $sandbox
-     */
-    public function __construct($api_login_id, $transaction_key, $sandbox = true)
+    public function __construct(string $api_login_id, string $transaction_key, bool $sandbox = true)
     {
         $this->api_login_id = $api_login_id;
         $this->transaction_key = $transaction_key;
-        $this->apiUrl = $sandbox ? 'https://apitest.authorize.net/xml/v1/request.api' : 'https://api.authorize.net/xml/v1/request.api';
+        $this->api_url = $sandbox ? 'https://apitest.authorize.net/xml/v1/request.api' : 'https://api.authorize.net/xml/v1/request.api';
     }
 
-    /**
-     * Usage:
-     * $payment_data = [
-     *    'amount' => 10.00,
-     *    'card_number' => '4111111111111111',
-     *    'expiration_date' => '12/24',
-     *    'cvv' => '123',
-     *    'first_name' => 'John',
-     *    'last_name' => 'Doe',
-     *    'address' => '123 Main St',
-     *    'city' => 'New York',
-     *    'state' => 'NY',
-     *    'zip' => '10001',
-     *    'country' => 'US',
-     * ];
-     * createPayment($payment_data)
-     * @param array $payment_data
-     * @return array
-     */
     public function create_payment(array $payment_data): array
     {
+        if ($this->has_unsafe_card_data($payment_data)) {
+            return $this->reject_unsafe_legacy_payload('authorizenet');
+        }
+
+        $normalized = $this->normalize_payment_data($payment_data);
+        if (!empty($normalized['error'])) {
+            return $this->normalize_response('authorizenet', 'failed', [], null, null, $normalized['error']);
+        }
+
         $transactionRequest = [
             'createTransactionRequest' => [
                 'merchantAuthentication' => [
                     'name' => $this->api_login_id,
-                    'transactionKey' => $this->transaction_key
+                    'transactionKey' => $this->transaction_key,
                 ],
-                'transactionRequest' => [
-                    'transactionType' => 'authCaptureTransaction',
-                    'amount' => $payment_data['amount'],
+                'transactionRequest' => array_filter([
+                    'transactionType' => $normalized['transaction_type'],
+                    'amount' => $normalized['amount'],
                     'payment' => [
-                        'creditCard' => [
-                            'cardNumber' => $payment_data['card_number'],
-                            'expirationDate' => $payment_data['expiration_date'],
-                            'cardCode' => $payment_data['cvv']
-                        ]
+                        'opaqueData' => [
+                            'dataDescriptor' => $normalized['descriptor'],
+                            'dataValue' => $normalized['value'],
+                        ],
                     ],
-                    'billTo' => [
-                        'firstName' => $payment_data['first_name'],
-                        'lastName' => $payment_data['last_name'],
-                        'address' => $payment_data['address'],
-                        'city' => $payment_data['city'],
-                        'state' => $payment_data['state'],
-                        'zip' => $payment_data['zip'],
-                        'country' => $payment_data['country']
-                    ]
-                ]
-            ]
+                    'billTo' => $normalized['bill_to'],
+                    'order' => $normalized['order'],
+                ]),
+            ],
         ];
 
-        $response = wp_remote_post($this->apiUrl, [
+        $response = $this->perform_request($this->api_url, [
+            'method' => 'POST',
             'headers' => [
-                'Content-Type' => 'application/json'
+                'Content-Type' => 'application/json',
             ],
-            'body' => json_encode($transactionRequest)
+            'body' => wp_json_encode($transactionRequest),
         ]);
 
-        if (is_wp_error($response)) {
-            return [
-                "status" => "failed",
-                "message" => $response->get_error_message()
-            ];
+        if (!$response['ok']) {
+            return $this->normalize_response('authorizenet', 'failed', [], null, null, $response['error']);
         }
 
-        return json_decode(wp_remote_retrieve_body($response), true);
+        $data = $this->decode_json_body($response['body']);
+        $resultCode = strtoupper((string) ($data['messages']['resultCode'] ?? 'ERROR'));
+
+        return $this->normalize_response(
+            'authorizenet',
+            $resultCode === 'OK' ? 'succeeded' : 'failed',
+            $data,
+            $data['transactionResponse']['transId'] ?? null,
+            null,
+            $data['transactionResponse']['errors'][0]['errorText'] ?? ($data['messages']['message'][0]['text'] ?? null)
+        );
+    }
+
+    private function normalize_payment_data(array $payment_data): array
+    {
+        $opaqueData = $payment_data['opaque_data'] ?? $payment_data['opaqueData'] ?? null;
+        $descriptor = $payment_data['opaque_data_descriptor'] ?? $payment_data['data_descriptor'] ?? ($opaqueData['dataDescriptor'] ?? $opaqueData['descriptor'] ?? null);
+        $value = $payment_data['opaque_data_value'] ?? $payment_data['data_value'] ?? ($opaqueData['dataValue'] ?? $opaqueData['value'] ?? null);
+
+        if (empty($descriptor) || empty($value)) {
+            return ['error' => 'Authorize.Net payments now require Accept.js opaque token data.'];
+        }
+
+        $amount = Compatibility::getArrayValue($payment_data, ['amount']);
+        if ($amount === null || $amount === '') {
+            return ['error' => 'Authorize.Net payments require an amount.'];
+        }
+
+        return [
+            'descriptor' => sanitize_text_field((string) $descriptor),
+            'value' => sanitize_text_field((string) $value),
+            'amount' => (float) $amount,
+            'transaction_type' => !empty($payment_data['transaction_type']) ? sanitize_key((string) $payment_data['transaction_type']) : 'authCaptureTransaction',
+            'bill_to' => array_filter([
+                'firstName' => !empty($payment_data['first_name']) ? sanitize_text_field((string) $payment_data['first_name']) : null,
+                'lastName' => !empty($payment_data['last_name']) ? sanitize_text_field((string) $payment_data['last_name']) : null,
+                'address' => !empty($payment_data['address']) ? sanitize_text_field((string) $payment_data['address']) : null,
+                'city' => !empty($payment_data['city']) ? sanitize_text_field((string) $payment_data['city']) : null,
+                'state' => !empty($payment_data['state']) ? sanitize_text_field((string) $payment_data['state']) : null,
+                'zip' => !empty($payment_data['zip']) ? sanitize_text_field((string) $payment_data['zip']) : null,
+                'country' => !empty($payment_data['country']) ? sanitize_text_field((string) $payment_data['country']) : null,
+            ]),
+            'order' => array_filter([
+                'invoiceNumber' => !empty($payment_data['invoice_number']) ? sanitize_text_field((string) $payment_data['invoice_number']) : null,
+                'description' => !empty($payment_data['description']) ? sanitize_text_field((string) $payment_data['description']) : null,
+            ]),
+        ];
     }
 }

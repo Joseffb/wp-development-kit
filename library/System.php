@@ -38,13 +38,13 @@ class System
                 define("WDK_TEMPLATE_LOCATIONS_BASE", $config_base);
             } else if (is_dir(plugin_dir_path(__FILE__) . '/wdk/views')) {
                 // template override locations
-                define("WDK_TEMPLATE_LOCATIONS_BASE", [plugin_dir_path() . '/wdk/views']);
+                define("WDK_TEMPLATE_LOCATIONS_BASE", [plugin_dir_path(__FILE__) . 'wdk/views']);
             } else if (is_dir(get_stylesheet_directory() . '/wdk/views')) {
                 // template override locations
                 define("WDK_TEMPLATE_LOCATIONS_BASE", [get_stylesheet_directory() . '/wdk/views']);
-            } else if (is_dir(__DIR__ . '/views')) {
+            } else if (is_dir(dirname(__DIR__) . '/views')) {
                 // template override locations
-                define("WDK_TEMPLATE_LOCATIONS_BASE", [__DIR__ . '/views']);
+                define("WDK_TEMPLATE_LOCATIONS_BASE", [dirname(__DIR__) . '/views']);
             } else {
                 define("WDK_TEMPLATE_LOCATIONS_BASE", []);
             }
@@ -168,7 +168,6 @@ class System
                 // Taxonomy crate must happen on every load
                 Taxonomy::CreateCustomTaxonomy($name, $post_types, $labels, $options);
                 update_option('tax_' . $name . '_installed', true);
-                delete_option('tax_term_' . $name . '_installed');
                 if (!empty($config['defaults']) && (bool)get_option('tax_term_' . $name . '_installed') === false) {
                     // Default values need to only be seeded once, or you won't be able to delete or rename them later.
                     Taxonomy::CreateTerm($term_name, $config['defaults']);

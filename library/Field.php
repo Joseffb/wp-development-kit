@@ -2,8 +2,6 @@
 
 namespace WDK;
 
-use PhpMyAdmin\Util;
-
 /**
  * Class Field - Field input generator and tools
  * @package WDK\Library\Field
@@ -13,22 +11,16 @@ class Field
     /**
      * @var array used to cache a field config
      */
-    static $configs = [];
+    public static array $configs = [];
 
     /**
      * Used to write a custom field to the options table.
      * Todo: In future will also check permissions before write.
-     * @param $post_id
-     * @param $field_name
-     * @param $field_value
-     * @param bool $unique
-     * @param string $old_value
-     * @param bool $is_update
+     *
      * @return bool|int
      */
     public static function WriteToField($post_id, $field_name, $field_value, bool $unique = true, string $old_value = '', bool $is_update = false)
     {
-        //todo add permission check
         if ($retVal = (add_post_meta($post_id, $field_name, $field_value, $unique) === false)) {
             $retVal = update_post_meta($post_id, $field_name, $field_value, $old_value);
         }
@@ -38,9 +30,6 @@ class Field
 
     /**
      * Grabs the Fields.json config from a directory. Sets a copy in cache for later use.
-     * @param null $dir
-     * @param bool $refresh
-     * @return array
      */
     public static function GetFieldConfigs($dir = null, $refresh = false)
     {
@@ -50,106 +39,72 @@ class Field
                 if (!$fileinfo->isDot()) {
                     if ($fileinfo->isDir()) {
                         self::GetFieldConfigs($fileinfo->getPath());
-                    } else if (substr($fileinfo->getFilename(), -5) === '.json') {
-                        if ($fileinfo->getFilename() === 'Fields.json') {
-                            $config = json_decode(file_get_contents($fileinfo->getRealPath()), true);
-                            if (!empty($config)) {
-                                self::$configs = array_merge(self::$configs, $config);
-                            }
+                    } elseif (substr($fileinfo->getFilename(), -5) === '.json' && $fileinfo->getFilename() === 'Fields.json') {
+                        $config = json_decode(file_get_contents($fileinfo->getRealPath()), true);
+                        if (!empty($config)) {
+                            self::$configs = array_merge(self::$configs, $config);
                         }
-
                     }
                 }
             }
         }
+
         return self::$configs;
     }
 
-    /**
-     * @param $post_id
-     * @param $field_name
-     * @param bool $return_array
-     *
-     * @return mixed
-     */
     public static function ReadFromField($post_id, $field_name = '', $return_array = false)
     {
-        //todo add permission check
         return get_post_meta($post_id, $field_name, !$return_array);
     }
 
     /**
      * Used to create a custom field metabox to a CPT. Sets up filter column for field as well if option is enabled.
-     * @param $pt
-     * @param $id
-     * @param $label
-     * @param $type
-     * @param array $options
-     * @param array $fieldObj
-     * @param string $context
-     * @param string $priority
      */
-    public static function AddCustomFieldToPost($pt, $id, $label, $type, array $options = array(), $fieldObj = array(), $context = 'normal', $priority = 'high')
+    public static function AddCustomFieldToPost($pt, $id, $label, $type, array $options = [], $fieldObj = [], $context = 'normal', $priority = 'high'): void
     {
-        // todo: check permissions to see if user has write permission.
-        add_action('save_post', function ($post_id) use ($id) {
-            // Bail if we're doing an auto save
-            if (defined('DOING_AUTOSAVE') && DOING_AUTOSAVE) return;
-            // if our nonce isn't there, or we can't verify it, bail
-            if (empty($_POST["{$id}_meta_box_nonce"]) || !wp_verify_nonce($_POST["{$id}_meta_box_nonce"], "{$id}_meta_box_nonce")) return;
-            // if our current user can't edit this post, bail
-            if (!current_user_can('edit_post')) return;
-            //no data field, bail
-            if (empty($_POST[$id])) {
+        add_action('save_post', function ($post_id) use ($id, $type) {
+            if (defined('DOING_AUTOSAVE') && DOING_AUTOSAVE) {
                 return;
             }
 
-            // Probably a good idea to make sure your data is set
-            $save_value = $_POST[$id];
-            if (!empty($_POST["serialize_data_$id"])) {
-                if (is_array($_POST[$id])) {
-                    $ar = [];
-                    if (!is_serialized($_POST[$id][0])) {
-                        foreach ($_POST[$id] as $value) {
-                            $ar[] = $value['name'];
-                        }
-                    }
-                    $save_value = $ar;
-                } else {
-                    if (!is_serialized($_POST[$id]['name'])) {
-                        $save_value = serialize($_POST[$id]['name']);
-                    } else {
-                        $save_value = $_POST[$id]['name'];
-                    }
-
-                }
-                delete_post_meta($post_id, $id);
-                update_post_meta($post_id, $id, $save_value);
+            if (function_exists('wp_is_post_autosave') && wp_is_post_autosave($post_id)) {
                 return;
             }
 
-            if (is_array($save_value)) {
-                delete_post_meta($post_id, $id);
-                foreach ($_POST[$id] as $v) {
-//                    Log::Write($_POST[$id]);
-                    update_post_meta($post_id, $id, $v);
+            if (function_exists('wp_is_post_revision') && wp_is_post_revision($post_id)) {
+                return;
+            }
+
+            if (empty($_POST["{$id}_meta_box_nonce"]) || !wp_verify_nonce(self::unslash($_POST["{$id}_meta_box_nonce"]), "{$id}_meta_box_nonce")) {
+                return;
+            }
+
+            if (!current_user_can('edit_post', $post_id)) {
+                return;
+            }
+
+            if (!array_key_exists($id, $_POST)) {
+                if (in_array($type, ['checkbox', 'list', 'serialized_list'], true)) {
+                    delete_post_meta($post_id, $id);
                 }
                 return;
-            } else {
-                update_post_meta($post_id, $id, $save_value);
-                return;
             }
 
+            $saveValue = self::sanitizeSubmittedValue(
+                (string) $type,
+                self::unslash($_POST[$id]),
+                !empty($_POST["serialize_data_$id"])
+            );
+
+            self::persistFieldValue((int) $post_id, (string) $id, (string) $type, $saveValue);
         }, 1000);
 
-        $processed_fields = array();
-        // option to show or hide the metabox from json config. blank ot truish answer will show it.
-        $test = $pt."_".$id;
+        $processed_fields = [];
+        $test = $pt . '_' . $id;
         if (!in_array($test, $processed_fields, true)) {
-            if ((bool)$fieldObj['show_on_admin'] !== false || Utility::IsTrue($fieldObj['show_on_admin'])) {
-                if (!Utility::IsGutenbergEnabled()) {
-                } else {
-                    add_action('add_meta_boxes', function () use ($context, $priority, $pt, $id, $label, $type, $options, $fieldObj) {
+            if ((bool) ($fieldObj['show_on_admin'] ?? true) !== false || Utility::IsTrue($fieldObj['show_on_admin'] ?? true)) {
+                if (Utility::IsGutenbergEnabled()) {
+                    add_action('add_meta_boxes', function () use ($context, $priority, $pt, $id, $label, $type, $options) {
                         add_meta_box(
                             'meta_box_' . $id,
                             $label,
@@ -159,52 +114,48 @@ class Field
                             },
                             $pt,
                             $context,
-                            $priority);
+                            $priority
+                        );
                     });
                 }
-            }   $processed_fields[] = $test;
+            }
+            $processed_fields[] = $test;
         }
     }
+
     /**
      * Used to create an input field for the meta data based field in the db.
-     * @param $field_id
-     * @param $field_name
-     * @param $label
-     * @param $type
-     * @param $options
-     * @param \WP_Post|null $post
-     * @param bool $values
-     * @return string
      */
-    public static function CreateField($field_id, $field_name, $label, $type, $options, \WP_Post $post = null, bool $values = false): string
+    public static function CreateField($field_id, $field_name, $label, $type, $options, ?\WP_Post $post = null, bool $values = false): string
     {
-        $class = '';
-        if (!empty($options['classes'])) {
-            $class = implode(" ", (array)$options['classes']);
-        }
-        $pt = $options['post_type'] ?? ($post ? get_post_type($post) : 'post');
-        // Manage existing values here.
-        $values = $post !== null ? self::ReadFromField(get_the_ID(), $field_id) : $values;
-        $selected = !empty($values) ? $values : '';
-        //Log::Write($selected);
+        $class = self::sanitizeCssClasses($options['classes'] ?? []);
+        $labelText = self::escapeText((string) $label);
+        $fieldId = self::escapeAttr((string) $field_id);
+        $fieldName = self::escapeAttr((string) $field_name);
+        $type = trim((string) $type);
+        $values = $post !== null
+            ? self::ReadFromField($post->ID, $field_id, in_array($type, ['checkbox', 'list'], true))
+            : $values;
+        $selected = self::normalizeFieldValue($values);
+        $selectedValues = array_map('strval', (array) $selected);
 
-        switch (trim($type)) {
+        switch ($type) {
             case 'serialized_list':
                 $head = "<!-- Editable table -->
                         <div class='mt-3 table-editable'>
-                        <span class='table-row-add'><a href='#!' class='float-right text-success add-td-link'>Add Another $label</a>
-                       <table id='table_$field_id' class='table table-bordered table-responsive-md table-striped text-center editable-table'>
+                        <span class='table-row-add'><a href='#!' class='float-right text-success add-td-link'>Add Another {$labelText}</a>
+                       <table id='table_{$fieldId}' class='table table-bordered table-responsive-md table-striped text-center editable-table'>
                         <thead>
                           <tr>
-                            <th class='text-center'>$label</th>
+                            <th class='text-center'>{$labelText}</th>
                             <th class='text-center'>Remove</th>
                           </tr>
                         </thead>
                         <tbody>";
                 $rTemplate = "   <tr>
                           <td class='pt-3-half' contenteditable='false'>
-                            <input type='search' name='" . $field_name . "[][name]' %{name-value}% autocomplete='off' class='form-control autocomplete elem-name'>
-                                <button class='autocomplete-clear'>
+                            <input type='search' name='{$fieldName}[][name]' %{name-value}% autocomplete='off' class='form-control autocomplete elem-name'>
+                                <button type='button' class='autocomplete-clear'>
                                     <svg fill='#000000' height='24' viewBox='0 0 24 24' width='24' xmlns='https://www.w3.org/2000/svg'>
                                       <path d='M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z' />
                                       <path d='M0 0h24v24H0z' fill='none' />
@@ -215,146 +166,122 @@ class Field
                             <span class='table-elem-remove'><button type='button' class='btn btn-danger btn-rounded btn-sm my-0'>Remove</button></span>
                           </td>
                          </tr>";
-                $foot = "<input type='hidden' name='serialize_data_$field_name' value='true'/></tbody>
+                $foot = "<input type='hidden' name='serialize_data_{$fieldName}' value='true'/></tbody>
                                             </table>   </span>  
                                            </div>
                                         
                 <!-- Editable table -->";
                 $rows = '';
-                //error_log(print_r($selected, true));
+                $rowValues = is_array($selected) ? $selected : [$selected];
 
-                if (!empty($selected) && is_array($selected)) {
-                    $count = 0;
-                    foreach ($selected as $k) {
-                        //error_log(print_r($k, true));
-                        if (is_serialized($k)) {
-                            $k = unserialize($k, ['allowed_classes' => true]);
-                            //error_log(is_array($k));
-                            if (is_array($k)) {
-                                foreach ($k as $kk) {
-                                    $rows .= str_replace(['%{count}%', '%{name-value}%'], [$count, "value='$kk'"], $rTemplate);
-                                    $count++;
-                                }
-                            } else {
-                                $rows .= str_replace(['%{count}%', '%{name-value}%'], [0, "value='$k'"], $rTemplate);
-                            }
-                        } else {
-                            $rows .= str_replace(['%{count}%', '%{name-value}%'], [$count, "value='$k'"], $rTemplate);
-                            $count++;
+                foreach ($rowValues as $rowValue) {
+                    $normalizedValue = self::normalizeFieldValue($rowValue);
+                    if (is_array($normalizedValue)) {
+                        foreach ($normalizedValue as $item) {
+                            $rows .= str_replace('%{name-value}%', "value='" . self::escapeAttr((string) $item) . "'", $rTemplate);
                         }
+                        continue;
                     }
-                } else {
-                    //error_log('string');
-                    $rows .= str_replace(['%{count}%', '%{name-value}%'], [0, "value='$selected'"], $rTemplate);
+
+                    if ((string) $normalizedValue !== '') {
+                        $rows .= str_replace('%{name-value}%', "value='" . self::escapeAttr((string) $normalizedValue) . "'", $rTemplate);
+                    }
                 }
-                $html = $head . $rows . $foot;
-                break;
+
+                if ($rows === '') {
+                    $rows = str_replace('%{name-value}%', '', $rTemplate);
+                }
+
+                return $head . $rows . $foot;
+
             case 'select':
             case 'list':
-                if ($type === 'select') {
-                    $name = $field_name;
-                } else {
-                    $name = $field_name . '[]';
-                }
-                $is_list = $type === 'list' ? 'size="5" multiple' : '';
-                $html = "<div class='$class'><label for='$field_id'>$label</label><select class='col $type' id='$field_id' name='" . $name . "' $is_list>";
+                $name = $type === 'select' ? $fieldName : $fieldName . '[]';
+                $isList = $type === 'list' ? 'size="5" multiple' : '';
+                $html = "<div class='{$class}'><label for='{$fieldId}'>{$labelText}</label><select class='col {$type}' id='{$fieldId}' name='{$name}' {$isList}>";
                 if (!empty($options['values']) && is_array($options['values'])) {
-                    //Log::Write($options['values']);
-                    foreach ($options['values'] as $k => $v) {
-                        //Log::Write($k);
-                        //Log::Write($v);
-                        $s = in_array($v, (array)$selected, true) ? 'selected="selected"' : '';
-                        $html .= "<option class='$class option-$type' value='$v' $s>$k</option>.";
+                    foreach ($options['values'] as $key => $value) {
+                        $optionValue = is_array($value) ? ($value['value'] ?? '') : $value;
+                        $selectedAttr = in_array((string) $optionValue, $selectedValues, true) ? 'selected="selected"' : '';
+                        $html .= "<option class='{$class} option-{$type}' value='" . self::escapeAttr((string) $optionValue) . "' {$selectedAttr}>" . self::escapeText((string) $key) . '</option>';
                     }
                 }
-                $html .= '</select></div>';
-                break;
+                return $html . '</select></div>';
+
             case 'radio':
             case 'checkbox':
-                if ($type === 'radio') {
-                    $radio_inline = 'radio-inline ml-2';
-                    $name = $field_name;
-                } else {
-                    $radio_inline = '';
-                    $name = $field_name . '[]';
-                }
+                $radioInline = $type === 'radio' ? 'radio-inline ml-2' : '';
+                $name = $type === 'radio' ? $fieldName : $fieldName . '[]';
                 $html = "<label class='col-12'>no values defined</label>";
                 if (!empty($options['values']) && is_array($options['values'])) {
-                    $html = "";
+                    $html = '';
 
-                    if (!empty($label)) {
-                        $html .= "<label class='col-12' for='$field_id'>$label</label>";
+                    if ($labelText !== '') {
+                        $html .= "<label class='col-12' for='{$fieldId}'>{$labelText}</label>";
                     }
 
-                    // style for special radio buttons that use images instead of buttons.
                     $html .= "<style>
-                                /* HIDE RADIO */
-                                 .use-images{ 
+                                .use-images{
                                   position: absolute;
                                   opacity: 0;
                                   width: 0;
                                   height: 0;
                                 }
-                                
-                                /* IMAGE STYLES */
-                                 .use-images + img {
+
+                                .use-images + img {
                                   cursor: pointer;
                                   transition: background-color 0.2s;
                                 }
-                                
-                                /* HOVER STYLES */
-                                 .use-images:hover + img {
+
+                                .use-images:hover + img {
                                   background-color: #dddddd;
                                   transition: background-color 0.2s;
                                 }
-                                
-                                /* CHECKED STYLES */
-                                 .use-images:checked + img {
+
+                                .use-images:checked + img {
                                   background-color: #cccccc;
                                   transition: background-color 0.2s;
                                 }
-                                
                                 </style>";
-                    $cnt = 0;
-                    foreach ($options['values'] as $k => $v) {
-                        $lbl = $k;
-                        $image_class = '';
-                        //Log::Write($v, "Notice:");
-                        if (is_array($v)) {
-                            // these are the special radio buttons that use images instead of buttons.
-                            $image_class = "use-images";
-                            $lbl = "<img class='image col' src='" . $v['image'] . "'>";
-                            $v = $v['value'];
+
+                    $count = 0;
+                    foreach ($options['values'] as $key => $value) {
+                        $displayLabel = self::escapeText((string) $key);
+                        $imageClass = '';
+                        if (is_array($value)) {
+                            $imageClass = 'use-images';
+                            $displayLabel = "<img class='image col' src='" . self::escapeUrl((string) ($value['image'] ?? '')) . "' alt='" . self::escapeAttr((string) $key) . "'>";
+                            $value = $value['value'] ?? '';
                         }
 
-                        $s = in_array($v, (array)$selected, true) ? 'checked' : '';
-                        $div_class = str_replace('div-', '', $class);
-                        $html .= $type === 'checkbox' ? "<div class='$div_class wrapper'>" : '';
-                        $label_class = str_replace('label-', '', $class);
-                        $input_class = str_replace('input-', '', $class);
-                        $html .= "
-                                        <label class='col $label_class label radio-check-label $type-label $radio_inline' for='$field_id-$cnt'>
-                                            <input class='$input_class $type $image_class' 
-                                            type='$type'  
-                                            id='$field_id-$cnt' 
-                                            name='$name' 
-                                            value='$v' $s> $lbl
-                                       </label>
-                                 ";
-                        $html .= $type === 'checkbox' ? "</div>" : '';
-                        $cnt++;
+                        $checked = in_array((string) $value, $selectedValues, true) ? 'checked' : '';
+                        $divClass = self::sanitizeCssClasses(str_replace('div-', '', $class));
+                        $labelClass = self::sanitizeCssClasses(str_replace('label-', '', $class));
+                        $inputClass = self::sanitizeCssClasses(str_replace('input-', '', $class));
+                        $inputId = self::escapeAttr((string) $field_id . '-' . $count);
+
+                        $html .= $type === 'checkbox' ? "<div class='{$divClass} wrapper'>" : '';
+                        $html .= "<label class='col {$labelClass} label radio-check-label {$type}-label {$radioInline}' for='{$inputId}'>
+                                            <input class='{$inputClass} {$type} {$imageClass}'
+                                            type='{$type}'
+                                            id='{$inputId}'
+                                            name='{$name}'
+                                            value='" . self::escapeAttr((string) $value) . "' {$checked}> {$displayLabel}
+                                       </label>";
+                        $html .= $type === 'checkbox' ? '</div>' : '';
+                        $count++;
                     }
                 }
-                break;
+
+                return $html;
+
             case 'note':
-                $html = "<div class='$class'>$selected</div>";
-                break;
+                return "<div class='{$class}'>" . self::escapeText((string) $selected) . '</div>';
 
             case 'button':
             case 'reset':
             case 'submit':
-                $html = "<button class='$class button'  type='$type'>$selected</button>";
-                break;
+                return "<button class='{$class} button' type='{$type}'>" . self::escapeText((string) $selected) . '</button>';
 
             case 'date':
             case 'datetime-local':
@@ -372,29 +299,24 @@ class Field
             case 'search':
             case 'week':
             default:
-                $placeholder = !empty($options['placeholder']) ? $options['placeholder'] : '';
-                $label_class = str_replace('label-', '', $class);
-                $textbox_class = str_replace('textbox-', '', $class);
-                $div_class = str_replace('div-', '', $class);
-                $html = "<div class='$div_class'>
-                                        <label class='$label_class label input-label $type' for='$field_id'>$label</label><br/>
-                                       <input class='$textbox_class input $type-label'  id='$field_id' type='$type' name='$field_name' value='$selected' placeholder='$placeholder'/></div>";
-                break;
+                $placeholder = self::escapeAttr((string) ($options['placeholder'] ?? ''));
+                $labelClass = self::sanitizeCssClasses(str_replace('label-', '', $class));
+                $textboxClass = self::sanitizeCssClasses(str_replace('textbox-', '', $class));
+                $divClass = self::sanitizeCssClasses(str_replace('div-', '', $class));
+
+                return "<div class='{$divClass}'>
+                                        <label class='{$labelClass} label input-label {$type}' for='{$fieldId}'>{$labelText}</label><br/>
+                                       <input class='{$textboxClass} input {$type}-label' id='{$fieldId}' type='{$type}' name='{$fieldName}' value='" . self::escapeAttr((string) $selected) . "' placeholder='{$placeholder}'/></div>";
         }
-        return $html;
     }
 
     /**
      * Used to register sortable custom field columns based on a CPT index page. (not filterable)
-     * @param $field
-     * @param $post_type
-     * @param array $location
      */
     public static function AddFieldToPostAdminColumns($field, $post_type, array $location = []): void
     {
-
         $label = $field['admin_column_header'] === true ? $field['id'] : $field['admin_column_header'];
-        add_filter('manage_' . $post_type . '_posts_columns', function (array $columns) use ($field, $label, $location) {
+        add_filter('manage_' . $post_type . '_posts_columns', function (array $columns) use ($field, $label) {
             $bottom = array_slice($columns, count($columns) - 2);
             for ($x = 0; $x <= 2; $x++) {
                 $e = array_keys($columns);
@@ -430,6 +352,133 @@ class Field
                 $query->set('meta_type', 'numeric');
             }
         });
+    }
 
+    private static function unslash(mixed $value): mixed
+    {
+        if (function_exists('wp_unslash')) {
+            return wp_unslash($value);
+        }
+
+        if (is_array($value)) {
+            return array_map([self::class, 'unslash'], $value);
+        }
+
+        return is_string($value) ? stripslashes($value) : $value;
+    }
+
+    private static function normalizeFieldValue(mixed $value): mixed
+    {
+        if (is_string($value) && is_serialized($value)) {
+            $value = maybe_unserialize($value);
+        }
+
+        if (is_array($value)) {
+            return array_map([self::class, 'normalizeFieldValue'], $value);
+        }
+
+        return $value;
+    }
+
+    private static function sanitizeSubmittedValue(string $type, mixed $value, bool $forceSerialized = false): mixed
+    {
+        if ($forceSerialized || $type === 'serialized_list') {
+            $items = [];
+            foreach ((array) $value as $row) {
+                if (is_array($row) && array_key_exists('name', $row)) {
+                    $sanitized = sanitize_text_field((string) $row['name']);
+                    if ($sanitized !== '') {
+                        $items[] = $sanitized;
+                    }
+                } else {
+                    $sanitized = sanitize_text_field((string) $row);
+                    if ($sanitized !== '') {
+                        $items[] = $sanitized;
+                    }
+                }
+            }
+
+            return $items;
+        }
+
+        if (is_array($value)) {
+            return array_values(array_filter(array_map(static function ($item) use ($type) {
+                return self::sanitizeScalarValue($type, $item);
+            }, $value), static function ($item) {
+                return $item !== '' && $item !== null;
+            }));
+        }
+
+        return self::sanitizeScalarValue($type, $value);
+    }
+
+    private static function sanitizeScalarValue(string $type, mixed $value): mixed
+    {
+        if ($value === null) {
+            return null;
+        }
+
+        $value = (string) $value;
+
+        return match ($type) {
+            'email' => sanitize_email($value),
+            'url', 'image', 'file' => esc_url_raw($value),
+            'color' => sanitize_hex_color($value) ?: '',
+            'range' => is_numeric($value) ? (string) $value : sanitize_text_field($value),
+            default => sanitize_text_field($value),
+        };
+    }
+
+    private static function persistFieldValue(int $postId, string $fieldId, string $type, mixed $value): void
+    {
+        delete_post_meta($postId, $fieldId);
+
+        if (is_array($value) && in_array($type, ['checkbox', 'list'], true)) {
+            foreach ($value as $item) {
+                add_post_meta($postId, $fieldId, $item, false);
+            }
+            return;
+        }
+
+        update_post_meta($postId, $fieldId, $value);
+    }
+
+    private static function sanitizeCssClasses(array|string $classes): string
+    {
+        $classes = is_array($classes) ? $classes : (preg_split('/\s+/', trim((string) $classes)) ?: []);
+        $sanitized = array_map(static function ($class) {
+            return function_exists('sanitize_html_class')
+                ? sanitize_html_class((string) $class)
+                : preg_replace('/[^A-Za-z0-9_-]/', '', (string) $class);
+        }, $classes);
+
+        return trim(implode(' ', array_filter($sanitized)));
+    }
+
+    private static function escapeText(string $value): string
+    {
+        if (function_exists('esc_html')) {
+            return esc_html($value);
+        }
+
+        return htmlspecialchars($value, ENT_QUOTES, 'UTF-8');
+    }
+
+    private static function escapeAttr(string $value): string
+    {
+        if (function_exists('esc_attr')) {
+            return esc_attr($value);
+        }
+
+        return htmlspecialchars($value, ENT_QUOTES, 'UTF-8');
+    }
+
+    private static function escapeUrl(string $value): string
+    {
+        if (function_exists('esc_url')) {
+            return esc_url($value);
+        }
+
+        return htmlspecialchars($value, ENT_QUOTES, 'UTF-8');
     }
 }

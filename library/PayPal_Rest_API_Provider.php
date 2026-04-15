@@ -4,17 +4,12 @@ namespace WDK;
 
 class PayPal_Rest_API_Provider extends Payment_Provider
 {
-    private $client_id;
-    private $client_secret;
-    private $api_url;
-    private $access_token;
+    private string $client_id;
+    private string $client_secret;
+    private string $api_url;
+    private ?string $access_token = null;
 
-    /**
-     * @param $client_id
-     * @param $client_secret
-     * @param bool $sandbox
-     */
-    public function __construct($client_id, $client_secret, bool $sandbox = true)
+    public function __construct(string $client_id, string $client_secret, bool $sandbox = true)
     {
         $this->client_id = $client_id;
         $this->client_secret = $client_secret;
@@ -22,21 +17,64 @@ class PayPal_Rest_API_Provider extends Payment_Provider
         $this->access_token = $this->get_access_token();
     }
 
-    /**
-     * @return string
-     */
-    private function get_api_url()
+    public function create_payment(array $payment_data): array
     {
-        return $this->api_url;
+        if ($this->access_token === null) {
+            return $this->normalize_response('paypal', 'failed', [], null, null, 'Unable to authenticate with PayPal.');
+        }
+
+        $normalized = $this->normalize_payment_data($payment_data);
+        if (!empty($normalized['error'])) {
+            return $this->normalize_response('paypal', 'failed', [], null, null, $normalized['error']);
+        }
+
+        $response = $this->perform_request($this->api_url . '/v2/checkout/orders', [
+            'method' => 'POST',
+            'headers' => [
+                'Authorization' => 'Bearer ' . $this->access_token,
+                'Content-Type' => 'application/json',
+            ],
+            'body' => wp_json_encode($normalized['request']),
+        ]);
+
+        if (!$response['ok']) {
+            return $this->normalize_response('paypal', 'failed', [], null, null, $response['error']);
+        }
+
+        $data = $this->decode_json_body($response['body']);
+        if ($response['status'] >= 400) {
+            return $this->normalize_response(
+                'paypal',
+                'failed',
+                $data,
+                $data['id'] ?? null,
+                null,
+                $data['message'] ?? 'PayPal order creation failed.'
+            );
+        }
+
+        $approvalUrl = null;
+        foreach (($data['links'] ?? []) as $link) {
+            if (($link['rel'] ?? '') === 'approve') {
+                $approvalUrl = $link['href'] ?? null;
+                break;
+            }
+        }
+
+        return $this->normalize_response(
+            'paypal',
+            $this->map_status($data['status'] ?? ''),
+            $data,
+            $data['id'] ?? null,
+            $approvalUrl ? ['type' => 'redirect', 'url' => $approvalUrl] : null,
+            null
+        );
     }
 
-    /**
-     * @return mixed|null
-     */
-    private function get_access_token()
+    private function get_access_token(): ?string
     {
-        $url = $this->get_api_url() . '/v1/oauth2/token';
-        $response = wp_remote_post($url, [
+        $response = $this->perform_request($this->api_url . '/v1/oauth2/token', [
+            'method' => 'POST',
             'headers' => [
                 'Authorization' => 'Basic ' . base64_encode($this->client_id . ':' . $this->client_secret),
                 'Content-Type' => 'application/x-www-form-urlencoded',
@@ -44,64 +82,72 @@ class PayPal_Rest_API_Provider extends Payment_Provider
             'body' => 'grant_type=client_credentials',
         ]);
 
-        if (is_wp_error($response)) {
-            // Handle the error
+        if (!$response['ok']) {
             return null;
         }
 
-        $data = json_decode(wp_remote_retrieve_body($response), true);
+        $data = $this->decode_json_body($response['body']);
         return $data['access_token'] ?? null;
     }
 
-    /**
-     * Usage:
-     * $payment_data = [
-     *      'intent' => 'sale',
-     *      'payer' => [
-     *          'payment_method' => 'paypal'
-     *      ],
-     *      'transactions' => [
-     *          [
-     *              'amount' => [
-     *                  'total' => $payment_data['total'],
-     *                  'currency' => $payment_data['currency']
-     *              ],
-     *              'description' => $payment_data['description'],
-     *              'item_list' => [
-     *              'items' => $payment_data['items']
-     *          ],
-     *          'invoice_number' => uniqid()
-     *      ]
-     * ],
-     * 'redirect_urls' => [
-     * 'return_url' => $payment_data['return_url'],
-     * 'cancel_url' => $payment_data['cancel_url']
-     * ]
-     * ];
-     * createPayment($payment_data)
-     * @param array $payment_data
-     * @return array|null
-     */
-    public function create_payment(array $payment_data): array
+    private function normalize_payment_data(array $payment_data): array
     {
-        $url = $this->get_api_url() . '/v1/payments/payment';
+        if (!empty($payment_data['transactions']) && is_array($payment_data['transactions'])) {
+            Compatibility::warn(__METHOD__, 'Legacy PayPal v1 transaction payloads are deprecated. Use purchase_units and application_context instead.');
+            $purchaseUnits = [];
+            foreach ($payment_data['transactions'] as $transaction) {
+                $amount = $transaction['amount'] ?? [];
+                $purchaseUnits[] = array_filter([
+                    'amount' => [
+                        'currency_code' => strtoupper((string) ($amount['currency'] ?? 'USD')),
+                        'value' => (string) ($amount['total'] ?? '0.00'),
+                    ],
+                    'description' => $transaction['description'] ?? null,
+                    'invoice_id' => $transaction['invoice_number'] ?? null,
+                    'items' => $transaction['item_list']['items'] ?? null,
+                ]);
+            }
 
-        $response = wp_remote_post($url, [
-            'headers' => [
-                'Authorization' => 'Bearer ' . $this->access_token,
-                'Content-Type' => 'application/json',
-            ],
-            'body' => json_encode($payment_data),
-        ]);
-
-        if (is_wp_error($response)) {
-            // Handle the error
-            return [
-                "status" => "failed",
-                "message" => $response->get_error_message()
+            $redirectUrls = $payment_data['redirect_urls'] ?? [];
+            $request = [
+                'intent' => strtoupper((string) (($payment_data['intent'] ?? 'CAPTURE') === 'sale' ? 'CAPTURE' : ($payment_data['intent'] ?? 'CAPTURE'))),
+                'purchase_units' => $purchaseUnits,
+                'application_context' => array_filter([
+                    'return_url' => !empty($redirectUrls['return_url']) ? esc_url_raw((string) $redirectUrls['return_url']) : null,
+                    'cancel_url' => !empty($redirectUrls['cancel_url']) ? esc_url_raw((string) $redirectUrls['cancel_url']) : null,
+                ]),
             ];
+
+            return ['request' => $request];
         }
 
-        return json_decode(wp_remote_retrieve_body($response), true);
+        $purchaseUnits = $payment_data['purchase_units'] ?? [];
+        if (empty($purchaseUnits)) {
+            return ['error' => 'PayPal payments require purchase_units or a legacy transactions payload.'];
+        }
+
+        $applicationContext = $payment_data['application_context'] ?? [];
+        if (!empty($payment_data['return_url']) || !empty($payment_data['cancel_url'])) {
+            $applicationContext['return_url'] = !empty($payment_data['return_url']) ? esc_url_raw((string) $payment_data['return_url']) : ($applicationContext['return_url'] ?? null);
+            $applicationContext['cancel_url'] = !empty($payment_data['cancel_url']) ? esc_url_raw((string) $payment_data['cancel_url']) : ($applicationContext['cancel_url'] ?? null);
+        }
+
+        return [
+            'request' => [
+                'intent' => strtoupper((string) ($payment_data['intent'] ?? 'CAPTURE')),
+                'purchase_units' => $purchaseUnits,
+                'application_context' => $applicationContext,
+            ],
+        ];
+    }
+
+    private function map_status(string $status): string
+    {
+        return match ($status) {
+            'COMPLETED' => 'succeeded',
+            'CREATED', 'PAYER_ACTION_REQUIRED' => 'requires_action',
+            'APPROVED' => 'pending',
+            default => 'pending',
+        };
     }
 }

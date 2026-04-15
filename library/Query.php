@@ -32,7 +32,7 @@ class Query
      * @param bool $debug
      * @return bool|Query
      */
-    public static function GetPost(array $taxonomies = null, array $fields = null, array $args = [], bool $debug = false): bool
+    public static function GetPost(?array $taxonomies = null, ?array $fields = null, array $args = [], bool $debug = false): bool
     {
         wp_reset_query();
         $paged = self::IsPaged();
@@ -433,43 +433,20 @@ class Query
      */
     public static function GetPostAttachments(array $post_ids)
     {
-        global $wpdb;
-        $post_ids_for_sql = implode(',', $post_ids);
-        if (empty($post_ids_for_sql)) {
-            //no post id's so return false.
+        $post_ids = array_values(array_filter(array_map('absint', $post_ids)));
+        if (empty($post_ids)) {
             return false;
         }
-        $sql = $wpdb->prepare("SELECT ID FROM $wpdb->posts WHERE post_parent IN(%d) and post_type = 'attachment'",$post_ids_for_sql);
-        $wpdb->query($sql);
-        if (!$wpdb->num_rows) {
-            //no matching post with attachments so return false.
-            return false;
-        }
-        $post_in = $wpdb->get_col($sql);
-        $att = self::GetPost([], [], [
-            'posts_per_page' => -1,
-            'post_mime_type' => 'image',
-            'post_status' => 'all',
-            'post_type' => 'attachment',
-            'post__in' => $post_in,
-            'ignore_sticky_posts' => 1
-        ]);
 
-        $retVal = [];
-        if (is_array($att->posts)) {
-            $c = 0;
-            foreach ($att->posts as $post) {
-                $m = get_attached_media('', $post);
-                if (!empty($m)) {
-                    $retVal[$c] = $m;
-                }
-                $c++;
+        $attachments = [];
+        foreach ($post_ids as $post_id) {
+            $media = get_attached_media('', $post_id);
+            if (!empty($media)) {
+                $attachments = array_merge($attachments, array_values($media));
             }
-
-            return $retVal;
         }
 
-        return false;
+        return $attachments ?: false;
     }
 
     public static function get_post_id_by_slug($slug, $post_type = "any", $status = 'publish')

@@ -365,7 +365,7 @@ class PostInterface
     public function get(): ?object
     {
         if (!$this->post) {
-            if (class_exists('\WDK\Search') && method_exists('\WDK\Search', 'search')) {
+            if (!empty($this->query_args['search_provider']) && class_exists('\WDK\Search')) {
                 $provider = $this->query_args['search_provider'] ?? null;
                 $search = new \WDK\Search($provider);
                 if (method_exists($search, 'PostInterface_get')) {
@@ -529,7 +529,7 @@ class MetaHandler
      * @param callable $sanitize_callback Sanitization callback function.
      * @param callable $auth_callback     Authorization callback function.
      */
-    public function register_custom_field(string $field_name, callable $sanitize_callback = null, callable $auth_callback = null)
+    public function register_custom_field(string $field_name, ?callable $sanitize_callback = null, ?callable $auth_callback = null)
     {
         register_post_meta('', $field_name, [
             'show_in_rest'      => true,
@@ -707,7 +707,8 @@ class TaxonomyTermHandler implements \ArrayAccess
 
         if ($term_id) {
             wp_set_object_terms($this->post_id, [$term_id], $this->taxonomy, $append);
-            $this->terms = get_the_terms($this->post_id, $this->taxonomy);
+            $updatedTerms = get_the_terms($this->post_id, $this->taxonomy);
+            $this->terms = is_array($updatedTerms) ? array_values($updatedTerms) : [];
         }
     }
 
@@ -723,7 +724,8 @@ class TaxonomyTermHandler implements \ArrayAccess
         $term = term_exists($term_name, $this->taxonomy);
         if ($term) {
             wp_remove_object_terms($this->post_id, $term_name, $this->taxonomy);
-            $this->terms = get_the_terms($this->post_id, $this->taxonomy);
+            $updatedTerms = get_the_terms($this->post_id, $this->taxonomy);
+            $this->terms = is_array($updatedTerms) ? array_values($updatedTerms) : [];
         }
     }
 

@@ -7,8 +7,9 @@
 vendor/
 vendor/*
 composer.phar
-/composer.lock
 *.lock
+!/composer.lock
+.phpunit.cache/
 
 # NPM
 node_modules/
@@ -48,8 +49,6 @@ nb-configuration.xml
 
 # Mac OSX
 .DS_Store
-.github/
-.github/*
 
 # Thumbnails
 ._*
@@ -78,5 +77,4 @@ configs/
 configs/*
 
 # Wordpress Env config file
-.wp-env.json
 *.env

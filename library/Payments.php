@@ -18,22 +18,21 @@ class Payments
         throw new \RuntimeException("'$method' does not exist in the current payment provider", 10403);
     }
 
-    public function __construct($provider = 'PayPal_Rest_API_Provider', $args = [])
+    public function __construct(string|Payment_Provider|null $provider = null, array $args = [])
     {
-        if (!class_exists($provider)) {
-            throw new \RuntimeException('Invalid payment provider class provided.');
-        }
-
-        if (empty($args)) {
-            $this->set_payment_provider($provider);
-        } else {
-            $this->set_payment_provider( new $provider(...$args));
-        }
+        $this->set_payment_provider($provider, $args);
     }
 
-    public static function create_payment($payment_data, $args = [], $provider = 'PayPal_Rest_API_Provider')
+    public static function create_payment($payment_data, $args = [], $provider = null)
     {
-        return (new self($provider, $args))->payment_provider->create_payment($payment_data);    }
+        $providerArgs = is_array($args) ? $args : [];
+        if (isset($providerArgs['provider_args']) && is_array($providerArgs['provider_args'])) {
+            Compatibility::warn(__METHOD__, 'Passing provider_args inside the constructor arguments array is deprecated. Pass them as the second argument directly.');
+            $providerArgs = $providerArgs['provider_args'];
+        }
+
+        return (new self($provider, $providerArgs))->payment_provider->create_payment($payment_data);
+    }
 
     /**
      * Set the payment provider.
@@ -42,27 +41,15 @@ class Payments
      * @param array $args
      * @return void
      */
-    public function set_payment_provider($payment_provider, array $args = []): void
+    public function set_payment_provider(string|Payment_Provider|null $payment_provider, array $args = []): void
     {
-        if (is_string($payment_provider)) {
-            if (!class_exists($payment_provider)) {
-                throw new \RuntimeException('Invalid payment provider class provided.');
-            }
-
-            if (!is_subclass_of($payment_provider, Payment_Provider::class)) {
-                throw new \RuntimeException('Payment provider class must extend Payment_Provider.');
-            }
-
-            if(!empty($args)) {
-                $this->payment_provider = new $payment_provider(...$args);
-            } else {
-                $this->payment_provider = new $payment_provider();
-            }
-        } elseif ($payment_provider instanceof Payment_Provider) {
-            $this->payment_provider = $payment_provider;
-        } else {
-            throw new \RuntimeException('Invalid payment provider type provided. Must be a class name or an instance of Payment_Provider.');
-        }
+        $this->payment_provider = ProviderResolver::resolve(
+            $payment_provider,
+            '\\WDK\\PayPal_Rest_API_Provider',
+            Payment_Provider::class,
+            $args,
+            'payment provider'
+        );
     }
 }
 
@@ -70,61 +57,39 @@ class Payments
 
 // 1. Creating a payment using the default PayPal provider
 //    $payment_data = [
-//        // Your payment data here
-//        'intent' => 'sale',
-//        'payer' => [
-//            'payment_method' => 'paypal'
-//        ],
-//        'transactions' => [
+//        'intent' => 'CAPTURE',
+//        'purchase_units' => [
 //            [
 //                'amount' => [
-//                    'total' => '10.00',
-//                    'currency' => 'USD'
-//                ],
-//                'description' => 'Payment description',
-//                'invoice_number' => uniqid()
+//                    'currency_code' => 'USD',
+//                    'value' => '10.00'
+//                ]
 //            ]
 //        ],
-//        'redirect_urls' => [
-//            'return_url' => 'https://example.com/success',
-//            'cancel_url' => 'https://example.com/cancel'
-//        ]
+//        'return_url' => 'https://example.com/success',
+//        'cancel_url' => 'https://example.com/cancel'
 //    ];
-//    $args = [client_id, client_secret];
-//    $payment = Payments::create_payment($payment_data,$args);
+//    $args = ['client_id', 'client_secret'];
+//    $payment = Payments::create_payment($payment_data, $args);
 
 // 2. Creating a payment using the Authorize.Net provider
 //    $payment_data = [
-//        // Your payment data here
 //        'amount' => 10.00,
-//        'card_number' => '4111111111111111',
-//        'expiration_date' => '12/24',
-//        'cvv' => '123',
-//        'first_name' => 'John',
-//        'last_name' => 'Doe',
-//        'address' => '123 Main St',
-//        'city' => 'New York',
-//        'state' => 'NY',
-//        'zip' => '10001',
-//        'country' => 'US',
+//        'opaque_data' => [
+//            'dataDescriptor' => 'COMMON.ACCEPT.INAPP.PAYMENT',
+//            'dataValue' => 'opaque-token'
+//        ]
 //    ];
 //    $args = ['api_login_id', 'transaction_key'];
 //    $payment = Payments::create_payment($payment_data, $args, 'AuthorizeNet_Rest_API_Provider');
 
 // 3. Creating a payment using the Stripe provider
 //    $payment_data = [
-//        // Your payment data here
-//        'amount' => 10.00,
-//        'card_number' => '4242424242424242',
-//        'expiration_date' => '12/24',
-//        'cvv' => '123',
-//        'first_name' => 'John',
-//        'last_name' => 'Doe',
-//        'address' => '123 Main St',
-//        'city' => 'New York',
-//        'state' => 'NY',
-//        'zip' => '10001',
-//        'country' => 'US',
+//        'amount_cents' => 1000,
+//        'currency' => 'usd',
+//        'payment_method_id' => 'pm_12345',
+//        'confirm' => true,
+//        'return_url' => 'https://example.com/stripe/return'
 //    ];
-//    $args = ['sk_test_123456', 'acct_12345'];
+//    $args = ['sk_test_123456'];
 //    $payment = Payments::create_payment($payment_data, $args, 'Stripe_Rest_Api_Provider');

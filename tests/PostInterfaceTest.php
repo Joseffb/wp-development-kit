@@ -1,15 +1,15 @@
 <?php
 
-use PHPUnit\Framework\TestCase;
 use WDK\PostInterface;
 use WDK\MetaHandler;
 
-class PostInterfaceTest extends TestCase
+class PostInterfaceTest extends WdkTestCase
 {
     protected static $post_id;
 
     public static function setUpBeforeClass(): void
     {
+        self::resetWordPressState();
         // Set up the testing environment
         // Create a test post
         $post_arr = [

@@ -1,0 +1,19 @@
+{
+  "name": "wp-development-kit",
+  "private": true,
+  "version": "0.3.0",
+  "description": "Local WordPress environment tooling for WDK development.",
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "wp-env:start": "wp-env start",
+    "wp-env:stop": "wp-env stop",
+    "wp-env:destroy": "wp-env destroy",
+    "wp-env:cli": "wp-env run cli wp --info",
+    "wp-env:test-cli": "wp-env run tests-cli wp --info"
+  },
+  "devDependencies": {
+    "@wordpress/env": "^10.19.0"
+  }
+}

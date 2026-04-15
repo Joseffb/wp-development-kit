@@ -1,17 +1,16 @@
 <?php
 
-
-use PHPUnit\Framework\TestCase;
 use WDK\PostInterface;
 use WDK\MediaHandler;
 
-class MediaHandlerTest extends TestCase
+class MediaHandlerTest extends WdkTestCase
 {
     protected static $post_id;
     protected static $attachment_id;
 
     public static function setUpBeforeClass(): void
     {
+        self::resetWordPressState();
         // Create a test post
         $post_arr = [
             'post_title' => 'Media Test Post',

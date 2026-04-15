@@ -1,16 +1,16 @@
 <?php
 
-use PHPUnit\Framework\TestCase;
 use WDK\PostInterface;
 use WDK\CommentsHandler;
 
-class CommentsHandlerTest extends TestCase
+class CommentsHandlerTest extends WdkTestCase
 {
     protected static $post_id;
     protected static $comment_id;
 
     public static function setUpBeforeClass(): void
     {
+        self::resetWordPressState();
         // Create a test post
         $post_arr = [
             'post_title'   => 'Comments Test Post',

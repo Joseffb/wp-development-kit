@@ -1,250 +1,159 @@
 <?php
 
-use PHPUnit\Framework\TestCase;
+declare(strict_types=1);
+
 use WDK\Shadow;
-use WP_Post;
-use WP_Term;
 
-/**
- * Class ShadowTest
- *
- * Tests for the Shadow class functionality.
- */
-class ShadowTest extends TestCase
+class ShadowTest extends WdkTestCase
 {
-    protected static $post_type = 'shadow_test_post_type';
-    protected static $taxonomy = 'shadow_test_taxonomy';
-    protected static $condition_taxonomy = 'shadow_condition_taxonomy';
-    protected static $posts = [];
-    protected static $terms = [];
-    protected static $factory;
+    protected static string $postType = 'shadow_test_post_type';
+    protected static string $taxonomy = 'shadow_test_taxonomy';
+    protected static string $conditionTaxonomy = 'shadow_condition_taxonomy';
 
-    public static function setUpBeforeClass(): void
+    protected function setUp(): void
     {
-        // Register custom post type
-        register_post_type(self::$post_type, [
-            'label'        => 'Shadow Test Post Type',
-            'public'       => true,
-            'supports'     => ['title', 'editor'],
-            'has_archive'  => true,
-            'show_in_rest' => true,
+        self::resetWordPressState();
+        parent::setUp();
+
+        $resetRelationships = Closure::bind(static function (): void {
+            Shadow::$relationships = [];
+        }, null, Shadow::class);
+        $resetRelationships();
+
+        register_post_type(self::$postType, [
+            'label' => 'Shadow Test Post Type',
+            'public' => true,
+            'supports' => ['title', 'editor'],
         ]);
 
-        // Register custom taxonomy
-        register_taxonomy(self::$taxonomy, self::$post_type, [
-            'label'        => 'Shadow Test Taxonomy',
-            'public'       => true,
+        register_taxonomy(self::$taxonomy, self::$postType, [
+            'label' => 'Shadow Test Taxonomy',
+            'public' => true,
             'hierarchical' => true,
-            'show_in_rest' => true,
         ]);
 
-        // Register condition taxonomy
-        register_taxonomy(self::$condition_taxonomy, self::$post_type, [
-            'label'        => 'Shadow Condition Taxonomy',
-            'public'       => true,
+        register_taxonomy(self::$conditionTaxonomy, self::$postType, [
+            'label' => 'Shadow Condition Taxonomy',
+            'public' => true,
             'hierarchical' => false,
-            'show_in_rest' => true,
         ]);
 
-        // Create terms in condition taxonomy
-        self::$terms['condition_term'] = wp_insert_term('Condition Term', self::$condition_taxonomy);
-
-        // Hook into WordPress factories if available (for integration with WP tests)
-        global $wp_tests_options;
-        if (isset($wp_tests_options['active_plugins'])) {
-            self::$factory = new WP_UnitTest_Factory();
-        }
-
-        // Create initial posts
-        self::createTestPosts();
+        wp_insert_term('Condition Term', self::$conditionTaxonomy);
     }
 
-    public static function tearDownAfterClass(): void
+    private function createShadowPost(string $title, string $content = 'Shadow content'): int
     {
-        // Clean up posts
-        foreach (self::$posts as $post_id) {
-            wp_delete_post($post_id, true);
-        }
-
-        // Clean up terms
-        foreach (self::$terms as $term) {
-            if (isset($term['term_id'])) {
-                wp_delete_term($term['term_id'], self::$condition_taxonomy);
-            }
-        }
-
-        // Unregister post type and taxonomies
-        unregister_post_type(self::$post_type);
-        unregister_taxonomy(self::$taxonomy);
-        unregister_taxonomy(self::$condition_taxonomy);
+        return wp_insert_post([
+            'post_title' => $title,
+            'post_content' => $content,
+            'post_status' => 'publish',
+            'post_type' => self::$postType,
+        ]);
     }
 
-    protected static function createTestPosts()
+    public function testCreateRelationship(): void
     {
-        // Create posts for testing
-        $post_data = [
-            'post_title'   => 'Test Post 1',
-            'post_content' => 'Content for test post 1.',
-            'post_status'  => 'publish',
-            'post_type'    => self::$post_type,
-        ];
+        Shadow::create_relationship(self::$postType, self::$taxonomy);
 
-        $post_id = wp_insert_post($post_data);
-        self::$posts[] = $post_id;
+        $postId = $this->createShadowPost('Test Post 1');
+        $termId = (int) get_post_meta($postId, 'shadow_term_id', true);
+        $term = get_term($termId, self::$taxonomy);
+
+        $this->assertNotSame(0, $termId);
+        $this->assertInstanceOf(WP_Term::class, $term);
+        $this->assertSame('Test Post 1', $term->name);
     }
 
-    public function testCreateRelationship()
+    public function testUpdateShadowTerm(): void
     {
-        // Create shadow relationship
-        Shadow::create_relationship(self::$post_type, self::$taxonomy);
+        Shadow::create_relationship(self::$postType, self::$taxonomy);
 
-        // Trigger post save to create shadow term
-        $post_id = self::$posts[0];
-        $post = get_post($post_id);
-        wp_update_post($post);
+        $postId = $this->createShadowPost('Initial Title');
+        $termId = (int) get_post_meta($postId, 'shadow_term_id', true);
 
-        // Check if shadow term was created
-        $term_id = get_post_meta($post_id, 'shadow_term_id', true);
-        $this->assertNotEmpty($term_id, 'Shadow term ID should not be empty');
-
-        $term = get_term($term_id, self::$taxonomy);
-        $this->assertInstanceOf(WP_Term::class, $term, 'Shadow term should be a valid WP_Term object');
-        $this->assertEquals($post->post_title, $term->name, 'Term name should match post title');
-    }
-
-    public function testUpdateShadowTerm()
-    {
-        $post_id = self::$posts[0];
-        $post = get_post($post_id);
-
-        // Update post title
-        $new_title = 'Updated Test Post Title';
         wp_update_post([
-            'ID'         => $post_id,
-            'post_title' => $new_title,
+            'ID' => $postId,
+            'post_title' => 'Updated Title',
         ]);
 
-        // Retrieve updated term
-        $term_id = get_post_meta($post_id, 'shadow_term_id', true);
-        $term = get_term($term_id, self::$taxonomy);
+        $term = get_term($termId, self::$taxonomy);
 
-        // Check if term name was updated
-        $this->assertEquals($new_title, $term->name, 'Term name should be updated to match new post title');
+        $this->assertInstanceOf(WP_Term::class, $term);
+        $this->assertSame('Updated Title', $term->name);
     }
 
-    public function testConditionalShadowTermCreation()
+    public function testConditionalShadowTermCreation(): void
     {
-        // Create shadow relationship with conditionals
-        Shadow::create_relationship(self::$post_type, self::$taxonomy, [
-            'operator'   => 'AND',
-            'conditions' => [
-                [
-                    'taxonomy' => self::$condition_taxonomy,
-                    'values'   => 'Condition Term',
-                ],
-            ],
+        Shadow::create_relationship(self::$postType, self::$taxonomy, [
+            'operator' => 'AND',
+            'conditions' => [[
+                'taxonomy' => self::$conditionTaxonomy,
+                'values' => 'Condition Term',
+            ]],
         ]);
 
-        // Create a new post without the condition term
-        $post_id = wp_insert_post([
-            'post_title'   => 'Conditional Test Post',
-            'post_content' => 'This post should not have a shadow term.',
-            'post_status'  => 'publish',
-            'post_type'    => self::$post_type,
-        ]);
-        self::$posts[] = $post_id;
+        $postId = $this->createShadowPost('Conditional Post');
 
-        // Trigger post save
-        $post = get_post($post_id);
-        wp_update_post($post);
+        $this->assertSame('', get_post_meta($postId, 'shadow_term_id', true));
 
-        // Check that no shadow term was created
-        $term_id = get_post_meta($post_id, 'shadow_term_id', true);
-        $this->assertEmpty($term_id, 'Shadow term ID should be empty because conditions are not met');
+        wp_set_object_terms($postId, 'Condition Term', self::$conditionTaxonomy);
+        wp_update_post(get_post($postId));
 
-        // Assign the condition term to the post
-        wp_set_object_terms($post_id, 'Condition Term', self::$condition_taxonomy);
-
-        // Trigger post save again
-        wp_update_post($post);
-
-        // Check that shadow term is now created
-        $term_id = get_post_meta($post_id, 'shadow_term_id', true);
-        $this->assertNotEmpty($term_id, 'Shadow term ID should not be empty after meeting conditions');
-
-        // Clean up
-        wp_delete_post($post_id, true);
+        $termId = (int) get_post_meta($postId, 'shadow_term_id', true);
+        $this->assertGreaterThan(0, $termId);
     }
 
-    public function testDeleteShadowTerm()
+    public function testDeleteShadowTerm(): void
     {
-        $post_id = self::$posts[0];
-        $term_id = get_post_meta($post_id, 'shadow_term_id', true);
+        Shadow::create_relationship(self::$postType, self::$taxonomy);
 
-        // Delete the post
-        wp_delete_post($post_id, true);
+        $postId = $this->createShadowPost('Delete Me');
+        $termId = (int) get_post_meta($postId, 'shadow_term_id', true);
 
-        // Check if shadow term was deleted
-        $term = get_term($term_id, self::$taxonomy);
-        $this->assertNull($term, 'Shadow term should be deleted when post is deleted');
+        wp_delete_post($postId, true);
 
-        // Remove from posts array
-        array_shift(self::$posts);
+        $this->assertNull(get_term($termId, self::$taxonomy));
     }
 
-    public function testGetAssociatedTerm()
+    public function testGetAssociatedTerm(): void
     {
-        // Create a new post and shadow term
-        $post_id = wp_insert_post([
-            'post_title'   => 'Associated Term Test Post',
-            'post_content' => 'Testing get_associated_term method.',
-            'post_status'  => 'publish',
-            'post_type'    => self::$post_type,
-        ]);
-        self::$posts[] = $post_id;
+        Shadow::create_relationship(self::$postType, self::$taxonomy);
 
-        // Trigger shadow term creation
-        $post = get_post($post_id);
-        wp_update_post($post);
+        $postId = $this->createShadowPost('Associated Post');
+        $term = Shadow::get_associated_term(get_post($postId), self::$taxonomy);
 
-        // Retrieve associated term
-        $term = Shadow::get_associated_term($post, self::$taxonomy);
-        $this->assertInstanceOf(WP_Term::class, $term, 'Associated term should be a valid WP_Term object');
-        $this->assertEquals($post->post_title, $term->name, 'Term name should match post title');
+        $this->assertInstanceOf(WP_Term::class, $term);
+        $this->assertSame('Associated Post', $term->name);
     }
 
-    public function testGetAssociatedPosts()
+    public function testGetAssociatedPosts(): void
     {
-        // Get the term associated with the last created post
-        $post_id = end(self::$posts);
-        $post = get_post($post_id);
-        $term = Shadow::get_associated_term($post, self::$taxonomy);
+        Shadow::create_relationship(self::$postType, self::$taxonomy);
 
-        // Retrieve associated posts
-        $associated_posts = Shadow::get_associated_posts($term);
-        $this->assertIsArray($associated_posts, 'Associated posts should be an array');
-        $this->assertCount(1, $associated_posts, 'There should be one associated post');
-        $this->assertEquals($post_id, $associated_posts[0]->ID, 'Associated post ID should match the original post ID');
+        $postId = $this->createShadowPost('Associated Collection');
+        $term = Shadow::get_associated_term(get_post($postId), self::$taxonomy);
+        $associatedPosts = Shadow::get_associated_posts($term);
+
+        $this->assertIsArray($associatedPosts);
+        $this->assertCount(1, $associatedPosts);
+        $this->assertSame($postId, $associatedPosts[0]->ID);
     }
 
-    public function testGetRelatedPosts()
+    public function testGetRelatedPosts(): void
     {
-        // Create another post and assign the same shadow term
-        $post_id = wp_insert_post([
-            'post_title'   => 'Related Post',
-            'post_content' => 'Testing get_related_posts method.',
-            'post_status'  => 'publish',
-            'post_type'    => self::$post_type,
-        ]);
-        self::$posts[] = $post_id;
+        Shadow::create_relationship(self::$postType, self::$taxonomy);
 
-        // Assign the shadow term from the previous post
-        $term = Shadow::get_associated_term(get_post(end(self::$posts)), self::$taxonomy);
-        wp_set_object_terms($post_id, $term->term_id, self::$taxonomy);
+        $postId = $this->createShadowPost('Primary Post');
+        $term = Shadow::get_associated_term(get_post($postId), self::$taxonomy);
 
-        // Retrieve related posts
-        $related_posts = Shadow::get_related_posts($post_id, self::$taxonomy, self::$post_type);
-        $this->assertIsArray($related_posts, 'Related posts should be an array');
-        $this->assertCount(2, $related_posts, 'There should be two related posts');
+        $relatedPostId = $this->createShadowPost('Related Post');
+        wp_set_object_terms($relatedPostId, [$term->term_id], self::$taxonomy);
+        update_post_meta($relatedPostId, 'shadow_term_id', $term->term_id);
+
+        $relatedPosts = Shadow::get_related_posts($relatedPostId, self::$taxonomy, self::$postType);
+
+        $this->assertIsArray($relatedPosts);
+        $this->assertCount(2, $relatedPosts);
+        $this->assertEqualsCanonicalizing([$postId, $relatedPostId], array_map(static fn (WP_Post $post) => $post->ID, $relatedPosts));
     }
 }

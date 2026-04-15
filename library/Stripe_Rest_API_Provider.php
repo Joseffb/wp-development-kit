@@ -8,85 +8,154 @@ class Stripe_Rest_Api_Provider extends Payment_Provider
     private string $api_url = 'https://api.stripe.com/v1';
     private ?string $api_account;
 
-    /**
-     * @param string $api_secret_key  - the API-Key determines if you are in test or production environment
-     * @param string|null $account_id - Used to specify the ID of a connected Stripe account on behalf of which the payment is being made. This is useful when a platform or a marketplace is facilitating payments between multiple parties. The platform can create charges on behalf of the connected accounts, while Stripe takes care of handling the payouts to the connected accounts.
-     */
-    public function __construct(string $api_secret_key, string $account_id = null)
+    public function __construct(string $api_secret_key, ?string $account_id = null)
     {
         $this->api_secret_key = $api_secret_key;
         $this->api_account = $account_id;
     }
 
-    /**
-     * Usage:
-     * $payment_data = [
-     *    'amount' => 10.00,
-     *    'card_number' => '4242424242424242',
-     *    'expiration_month' => '12',
-     *    'expiration_year' => '2024',
-     *    'cvv' => '123',
-     *    'first_name' => 'John',
-     *    'last_name' => 'Doe',
-     *    'address' => '123 Main St',
-     *    'city' => 'New York',
-     *    'state' => 'NY',
-     *    'zip' => '10001',
-     *    'country' => 'US',
-     * ];
-     * create_payment($payment_data)
-     * @param array $payment_data
-     * @return array
-     */
     public function create_payment(array $payment_data): array
     {
-        $charge_data = [
-            'amount' => $payment_data['amount'],
-            'currency' => 'usd',
-            'source' => [
-                'object' => 'card',
-                'number' => $payment_data['card_number'],
-                'exp_month' => substr($payment_data['expiration_date'], 0, 2),
-                'exp_year' => substr($payment_data['expiration_date'], -2),
-                'cvc' => $payment_data['cvv'],
-                'name' => $payment_data['first_name'] . ' ' . $payment_data['last_name'],
-                'address_line1' => $payment_data['address'],
-                'address_city' => $payment_data['city'],
-                'address_state' => $payment_data['state'],
-                'address_zip' => $payment_data['zip'],
-                'address_country' => $payment_data['country']
-            ],
-            'description' => $payment_data['description'],
-            'metadata' => [
-                'first_name' => $payment_data['first_name'],
-                'last_name' => $payment_data['last_name'],
-                'address' => $payment_data['address'],
-                'city' => $payment_data['city'],
-                'state' => $payment_data['state'],
-                'zip' => $payment_data['zip'],
-                'country' => $payment_data['country']
-            ]
+        if ($this->has_unsafe_card_data($payment_data)) {
+            return $this->reject_unsafe_legacy_payload('stripe');
+        }
+
+        $normalized = $this->normalize_payment_data($payment_data);
+        if (!empty($normalized['error'])) {
+            return $this->normalize_response('stripe', 'failed', [], null, null, $normalized['error']);
+        }
+
+        $request = [
+            'amount' => $normalized['amount'],
+            'currency' => $normalized['currency'],
+            'description' => $normalized['description'],
+            'metadata' => $normalized['metadata'],
+            'capture_method' => $normalized['capture_method'],
+            'confirm' => $normalized['confirm'] ? 'true' : 'false',
         ];
+
+        if (!empty($normalized['payment_method'])) {
+            $request['payment_method'] = $normalized['payment_method'];
+        } else {
+            $request['automatic_payment_methods'] = ['enabled' => 'true'];
+        }
+
+        if (!empty($normalized['customer'])) {
+            $request['customer'] = $normalized['customer'];
+        }
+
+        if (!empty($normalized['receipt_email'])) {
+            $request['receipt_email'] = $normalized['receipt_email'];
+        }
+
+        if (!empty($normalized['return_url'])) {
+            $request['return_url'] = $normalized['return_url'];
+        }
 
         $headers = [
-            'headers' => [
-                'Authorization' => 'Bearer ' . $this->api_secret_key,
-                'Content-Type' => 'application/x-www-form-urlencoded'
-            ],
-            'body' => http_build_query($charge_data)
+            'Authorization' => 'Bearer ' . $this->api_secret_key,
+            'Content-Type' => 'application/x-www-form-urlencoded',
         ];
-        if(!empty($this->api_account)) {
-            $headers['headers']['Stripe-Account'] = $this->api_account;
+        if (!empty($this->api_account)) {
+            $headers['Stripe-Account'] = $this->api_account;
         }
-        $response = wp_remote_post($this->api_url . '/v1/charges', $headers);
 
-        if (is_wp_error($response)) {
-            return [
-                "status" => "failed",
-                "message" => $response->get_error_message()
+        $response = $this->perform_request($this->api_url . '/payment_intents', [
+            'method' => 'POST',
+            'headers' => $headers,
+            'body' => http_build_query($request),
+        ]);
+
+        if (!$response['ok']) {
+            return $this->normalize_response('stripe', 'failed', [], null, null, $response['error']);
+        }
+
+        $data = $this->decode_json_body($response['body']);
+        if ($response['status'] >= 400) {
+            return $this->normalize_response(
+                'stripe',
+                'failed',
+                $data,
+                $data['id'] ?? null,
+                null,
+                $data['error']['message'] ?? ($data['message'] ?? 'Stripe request failed.')
+            );
+        }
+
+        $nextAction = null;
+        if (!empty($data['next_action']['redirect_to_url']['url'])) {
+            $nextAction = [
+                'type' => 'redirect',
+                'url' => $data['next_action']['redirect_to_url']['url'],
+            ];
+        } elseif (!empty($data['client_secret'])) {
+            $nextAction = [
+                'type' => 'client_secret',
+                'client_secret' => $data['client_secret'],
             ];
         }
 
-        return json_decode(wp_remote_retrieve_body($response), true);
+        return $this->normalize_response(
+            'stripe',
+            $this->map_status($data['status'] ?? ''),
+            $data,
+            $data['id'] ?? null,
+            $nextAction,
+            $data['last_payment_error']['message'] ?? null
+        );
+    }
+
+    private function normalize_payment_data(array $payment_data): array
+    {
+        $amount = Compatibility::getArrayValue($payment_data, ['amount_cents']);
+        if ($amount === null) {
+            $legacyAmount = Compatibility::getArrayValue($payment_data, ['amount']);
+            $amount = Compatibility::normalizeMoneyAmount($legacyAmount);
+            if ($legacyAmount !== null) {
+                Compatibility::warn(__METHOD__, 'Passing Stripe amount as a decimal is deprecated. Use amount_cents instead.');
+            }
+        }
+
+        if ($amount === null || $amount < 1) {
+            return ['error' => 'Stripe payments require a positive amount or amount_cents value.'];
+        }
+
+        $metadata = $payment_data['metadata'] ?? [];
+        foreach (['first_name', 'last_name', 'address', 'city', 'state', 'zip', 'country'] as $legacyKey) {
+            if (!empty($payment_data[$legacyKey]) && !isset($metadata[$legacyKey])) {
+                Compatibility::warn(__METHOD__, 'Legacy Stripe customer fields are deprecated. Provide metadata explicitly instead.');
+                $metadata[$legacyKey] = sanitize_text_field((string) $payment_data[$legacyKey]);
+            }
+        }
+
+        $currency = strtolower((string) Compatibility::getArrayValue($payment_data, ['currency'], 'usd'));
+        $paymentMethod = Compatibility::getArrayValue($payment_data, ['payment_method_id', 'payment_method']);
+        $confirm = array_key_exists('confirm', $payment_data)
+            ? filter_var($payment_data['confirm'], FILTER_VALIDATE_BOOLEAN)
+            : !empty($paymentMethod);
+
+        return [
+            'amount' => $amount,
+            'currency' => $currency,
+            'description' => !empty($payment_data['description']) ? sanitize_text_field((string) $payment_data['description']) : null,
+            'metadata' => $metadata,
+            'payment_method' => $paymentMethod ? sanitize_text_field((string) $paymentMethod) : null,
+            'confirm' => $confirm,
+            'capture_method' => !empty($payment_data['capture_method']) ? sanitize_key((string) $payment_data['capture_method']) : 'automatic',
+            'return_url' => !empty($payment_data['return_url']) ? esc_url_raw((string) $payment_data['return_url']) : null,
+            'customer' => !empty($payment_data['customer']) ? sanitize_text_field((string) $payment_data['customer']) : null,
+            'receipt_email' => !empty($payment_data['receipt_email']) ? sanitize_email((string) $payment_data['receipt_email']) : null,
+        ];
+    }
+
+    private function map_status(string $status): string
+    {
+        return match ($status) {
+            'succeeded' => 'succeeded',
+            'processing' => 'pending',
+            'requires_action', 'requires_confirmation', 'requires_capture' => 'requires_action',
+            'requires_payment_method', 'canceled' => 'failed',
+            default => 'pending',
+        };
     }
 }

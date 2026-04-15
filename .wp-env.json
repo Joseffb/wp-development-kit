@@ -1,0 +1,13 @@
+{
+  "plugins": [
+    "."
+  ],
+  "config": {
+    "WP_DEBUG": true,
+    "WP_DEBUG_LOG": true,
+    "SCRIPT_DEBUG": true
+  },
+  "mappings": {
+    "wp-content/mu-plugins/wp-development-kit-examples": "./examples"
+  }
+}

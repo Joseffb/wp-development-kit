@@ -1,198 +1,332 @@
 # WP Development Kit
 
-Welcome the WP Development Kit, or WDK for short. WDK allows a WordPress Developer to create sites easily and efficiently.
+WP Development Kit, or WDK, is a WordPress development library for building content models, taxonomies, template flows, and admin tooling with a JSON-first setup layer.
 
-Some features that WDK makes available for developers are as follows:
+## Breaking Change Notice
 
-- JSON based configuration files: Create custom post types, custom taxonomies, menus, pages, posts, shadow taxonomy relationships, shortcodes and widgets, all from a set of config files.
-- Shadow Taxonomies allow you to link and use multiple post, as well as properties of those post (i.e. images, metadata, taxonomies, etc) in a related post. Conditional Shadow Taxonomies can also be defined manually allowing you to split a single taxonomy representation into multiple (i.e. a source post can be divided into multiple taxonomies in same post based off of specific values.)
-- Utility functions for logging, debugging, and troubleshooting.
-- Twig based templates for use in plugins, themes and child themes, and admin pages. This allows you to pull your data layer out of your template layer. Great vor MVC workflows.
+WDK `0.3.0` is a stabilization release with compatibility shims.
 
-## Getting Started
+Unavoidable breaking changes:
 
-WDK can be installed as a plugin (download and place into plugins folder) or installed via composer.
+- PHP `8.1+` is now required.
+- Payment providers now expect secure tokenized or hosted-flow payloads.
+- Raw card-number / PAN / CVV server-side payloads are rejected.
+- The repo now tracks Composer, PHPUnit, CI, and local wp-env tooling as part of the supported developer contract.
+
+Compatibility shims included in `0.3.0`:
+
+- Legacy short provider names such as `PayPal_Rest_API_Provider` and `WP_Local_Search_Provider` still work.
+- Deprecated provider-constructor argument patterns are still normalized where they can be adapted safely.
+- Legacy PayPal v1-style transaction payloads are normalized into Orders v2 request shapes.
+- Legacy Stripe decimal `amount` values are normalized into `amount_cents`.
+
+The shims emit deprecation notices so existing integrations keep moving while you upgrade.
+
+## What WDK Provides
+
+- JSON-based configuration for post types, taxonomies, menus, posts, fields, shortcodes, sidebars, and widgets.
+- Shadow taxonomies for linking posts through mirrored taxonomy terms.
+- Twig and Timber-compatible template flows for themes, plugins, and admin pages.
+- Post, taxonomy, media, meta, relationship, and comment helpers through `PostInterface`.
+- Utility helpers for debugging and troubleshooting.
+
+## Supported Runtime Matrix
+
+| Surface | Supported |
+| --- | --- |
+| PHP | `8.1`, `8.2`, `8.3`, `8.4`, `8.5` |
+| WordPress install style | Plugin install or Composer install |
+| Twig integration | Timber `^1.24.1` or `^2.0` |
+| Local WordPress tooling | Node `18+`, Docker, `@wordpress/env` |
+| Automated repo validation | Composer smoke tests, PHPUnit, PHP lint, GitHub Actions |
+
+## Installation
 
 ### Plugin install
-- Download the source code from https://github.com/Joseffb/wp-development-kit
-- Place the files into a folder called wp-development-kit in your /plugins or /mu-plugins folder.
-- Run composer install within that directory to install dependency files.
-- Activate the plugin from within that WordPress site.
+
+1. Clone or download this repository into `wp-content/plugins/wp-development-kit` or `wp-content/mu-plugins/wp-development-kit`.
+2. Run `composer install`.
+3. Activate the plugin.
+
+If Composer dependencies are missing, the plugin now fails closed with an admin notice instead of fatalling at bootstrap.
 
 ### Composer install
-- run the following composer command withing your app:
-- `composer require joseffb/wp-development-kit`
 
-### Initialize the library
-- Inside your start file place the following command to initiate the composer autoloader:
-- `require_once __DIR__ . '/vendor/autoload.php'`;
-- Place the following command to call and initiate WDK:
-`WDK\System::Start();`
-
-## File structure
-WDK by default expects you to have your WDK files in the following structure from the root of where you ran System::Start():
-```   
-        root  
-        │
-        └─── wdk
-            │
-            └─── configs
-            │       │
-            │       └─── json files
-            │
-            └─── views
-                    │
-                    └─── twig files
+```bash
+composer require joseffb/wp-development-kit
 ```
-Location to these files can be changed by defining the path in 'WDK_CONFIG_BASE' and 'WDK_TEMPLATE_LOCATIONS_BASE' accordingly.
-If you create multiple plugins and themes in the same site with WDK this may be a good option in terms of maintenance.
 
-## Working with config files
-### 8 Types of config files
-WDK has 8 different config files that you can use to scaffold your WordPress site:
-- Fields.json - Used to create custom fields on CPT.
-- Menus.json - Used to create menus in the WP Menu system
-- Posts.json - Used to load pages and posts into the system.
-- Post_types.json - Used to create custom post types, as well as additional features such as shadow taxonomy relationships
-- Shortcodes.json - Used to define shortcodes
-- Sidebars.json - Used to define sidebars (as well as which widgets load into sidebars) 
-- Taxonomies.json - Used to define custom taxonomies as well as extra options such as admin columns and WP-GraphQL access.
-- Widgets.json - Used to define widgets as well as custom fields for said widget.
-
-**_Important_**: Config files must be valid and meet JSON file specifications. If they do not validate, WP will have a critical fail.
-
-### Post_types.json & Taxonomy.json
-The two of the most used config files that you will use are probably Post_types.json and Taxonomy.json. An entire site can be setup within minutes with just these two files.
-Each file is made to mimic the parameters of the WordPress CPT and Taxonomy command.
-
-Most of the arguments are pretty straight forward and with some being extra and explained below.
-#### Post Types
-Extra Options:
-- use_twig: used to tell WDK to use a Twig based template for that CPT type. The template will be looking in the /wdk/views folder of your root directory for 'single-CPTNAME.twig'. Any WordPress template (such as archive) can be replaced using an update_option(wdk_template_TEMPLATENAME); in your functions file.;
-- shadow_in_cpt: an array identifying the name singular name of the CPT that should be linked with this CPT definition. Shadow CPT will show up as a taxonomy for this CPT record.
-
-Example json file:
-```json
-[
-  {
-    "name": "Destinations", 
-    ...
-  },
-  {
-    "name": "Events",
-    "args": {
-        "use_twig": true,
-        "shadow_in_cpt": ["destination"],
-        "label": "Events",
-        "labels": {
-            "name": "Events",
-            "singular_name": "Event",
-            "menu_name": "Events",
-            "parent_item_colon": "Parent Events:",
-            "all_items": "All Events",
-            "view_item": "View Events",
-            "add_new_item": "Select Events:",
-            "add_new": "Add New",
-            "edit_item": "Edit Events",
-            "update_item": "Update Events",
-            "search_items": "Search Events",
-            "not_found": "Event Not Found",
-            "not_found_in_trash": "Event not found in Trash"
-        },
-        "description": "Conference Events",
-        "supports": [
-            "title",
-            "thumbnail",
-            "editor",
-            "custom-fields",
-            "comments"
-        ],
-        "hierarchical": false,
-        "public": true,
-        "show_ui": true,
-        "show_in_menu": true,
-        "show_in_nav_menus": true,
-        "show_in_admin_bar": true,
-        "menu_position": 4,
-        "can_export": true,
-        "has_archive": true,
-        "exclude_from_search": true,
-        "publicly_queryable": true
-    }
-  }
-]
-```
-###### ex. 'Event' cpt records will now be displayed as available in a taxonomy/category called 'Events' within the Destination record admin.
-
-#### Taxonomy
-Extra Options:
-- show_as_admin_filter: defaults to true. Will add a filter to the top of the standard WP CPT page for you.
-- show_admin_column: defualts to true. Will add a column to the affected CPT
-- show_in_graphql: (not shown) defaults true. is needed to show up a CPT in WP-GraphQL plugin
-- graphql_single_name: (not shown) defaults to inflector class' computed singular name.
-- graphql_plural_name: (not shown) defaults to inflector class' computed plural name.
-
-```json
-[
-  {
-    "name": "Event Day",
-    "post_types": [
-      "event"
-    ],
-    "labels": [],
-    "options": {
-      "show_in_admin_bar": "true",
-      "show_admin_column": "true",
-      "show_as_admin_filter": "true"
-    },
-    "defaults": [
-      "6/1",
-      "6/2",
-      "6/3",
-      "6/4"
-    ]
-  },
-  {
-    "name": "Event Slot",
-    "post_types": [
-      "event"
-    ],
-    "labels": [],
-    "options": {
-      "show_in_admin_bar": "true",
-      "show_admin_column": "true",
-      "show_as_admin_filter": "true"
-    },
-    "defaults": [
-      "9am - 10am",
-      "11am - 12pm",
-      "12pm - 1pm",
-      "1pm - 2pm",
-      "2pm - 3pm"
-    ]
-  }
-]
-
-```
-## Using Twig Templates
-WDK uses Timber plugin as a nifty way of implementing Twig on WordPress as such, WDK also uses The Timber Starter Theme as it's default backup theme (located at https://github.com/timber/starter-theme/ under MIT license).
-
-Twig templates load when two conditions are met. 
-1) process_template_TEMPLATENAME option or post_meta is set to true (use_twig does this for you). 
-2) And When Timber finds an adequate matching template in it's location paths. 
-
-On Twig load a context hook (wdk_context_TEMPLATENAME) is fired which you can use to add data to your template. 
+Then initialize WDK in your bootstrap file:
 
 ```php
-add_filter('wdk_context_templatename', function($context) {
-    $context['my new data'] = "something here";
+require_once __DIR__ . '/vendor/autoload.php';
+
+WDK\System::Start();
+```
+
+## Project Layout
+
+By default WDK looks for configuration and view files in:
+
+```text
+project-root/
+└── wdk/
+    ├── configs/
+    └── views/
+```
+
+You can override those locations with `WDK_CONFIG_BASE` and `WDK_TEMPLATE_LOCATIONS_BASE`.
+
+## Config Files
+
+WDK supports these JSON files:
+
+- `Fields.json`
+- `Menus.json`
+- `Pages.json` / `Posts.json`
+- `Post_types.json`
+- `Shortcodes.json`
+- `Sidebars.json`
+- `Taxonomies.json`
+- `Widgets.json`
+
+Config must still be valid JSON. Invalid files stop setup processing.
+
+## Key Behaviors
+
+### Post Types and Taxonomies
+
+- `Post_types.json` mirrors `register_post_type()` with extra WDK options such as `use_twig` and `shadow_in_cpt`.
+- `Taxonomies.json` mirrors `register_taxonomy()` and supports admin filters, admin columns, defaults, and GraphQL naming helpers.
+- Taxonomy defaults are now seeded once and stay stable across repeated boots.
+
+### Shadow Taxonomies
+
+Shadow taxonomies mirror posts into taxonomy terms and keep term metadata linked back to the source post. This is useful when a taxonomy should behave like a related record picker without building a full custom UI.
+
+### Templates
+
+WDK works with Timber and Twig. When a template is processed through WDK, the corresponding `wdk_context_*` filter can extend the view context.
+
+```php
+add_filter('wdk_context_templatename', function ($context) {
+    $context['message'] = 'Hello from WDK';
     return $context;
 });
 ```
 
-### Change Log
-0.0.41 - Added Hive class for centralized post management.
+## Compatibility Shims
 
-0.0.2 - Fixed warning when no config file is available.
+`0.3.0` keeps older integrations moving where it is safe to do so.
 
-0.0.1 - Initial Release
+### Search providers
+
+Recommended:
+
+```php
+$search = new WDK\Search(WDK\WP_Local_Search_Provider::class);
+```
+
+Still supported with deprecation notice:
+
+```php
+$search = new WDK\Search('WP_Local_Search_Provider');
+```
+
+### Payment providers
+
+Recommended:
+
+```php
+$payments = new WDK\Payments(WDK\PayPal_Rest_API_Provider::class, [
+    'client-id',
+    'client-secret',
+]);
+```
+
+Still supported with deprecation notice:
+
+```php
+$payments = new WDK\Payments('PayPal_Rest_API_Provider', [
+    'client-id',
+    'client-secret',
+]);
+```
+
+## Secure Payment Guidance
+
+WDK still exposes `Payment_Provider::create_payment(array $payment_data)`, but the accepted payloads have changed.
+
+### Normalized response shape
+
+All providers return a normalized array:
+
+```php
+[
+    'status' => 'succeeded|pending|requires_action|failed',
+    'provider' => 'stripe|paypal|authorizenet',
+    'object_id' => 'provider-specific-id-or-null',
+    'next_action' => [
+        'type' => 'redirect|client_secret',
+        // provider-specific keys...
+    ],
+    'message' => 'optional human-readable message',
+    'raw' => [ /* provider payload */ ],
+]
+```
+
+### Stripe
+
+Stripe now uses Payment Intents.
+
+Recommended payload keys:
+
+- `amount_cents`
+- `currency`
+- `payment_method_id`
+- `confirm`
+- `capture_method`
+- `return_url`
+- `customer`
+- `receipt_email`
+- `metadata`
+
+Deprecated but normalized:
+
+- decimal `amount`
+
+Rejected:
+
+- `card_number`
+- `cvv`
+- `expiration_date`
+- nested raw card `source` payloads
+
+### PayPal
+
+PayPal now uses Orders v2.
+
+Recommended payload keys:
+
+- `intent`
+- `purchase_units`
+- `application_context`
+- `return_url`
+- `cancel_url`
+
+Deprecated but normalized:
+
+- v1-style `transactions`
+- `redirect_urls`
+
+### Authorize.Net
+
+Authorize.Net now requires Accept.js opaque token data.
+
+Recommended payload keys:
+
+- `opaque_data`
+- `opaque_data_descriptor`
+- `opaque_data_value`
+- `transaction_type`
+- `amount`
+
+Rejected:
+
+- raw PAN / card-number payloads
+
+## Upgrade Guide From 0.2.x
+
+1. Upgrade PHP to `8.1+`.
+2. Run `composer install` or `composer update`.
+3. If you use the tracked local environment, run `npm install`.
+4. Move provider references toward fully qualified class names.
+5. Replace raw card payloads with secure tokenized or hosted-flow inputs.
+6. Update any payment consumers to read the normalized response shape.
+7. Re-run the repo validation commands below.
+
+## Developer Tooling
+
+### Composer and PHPUnit
+
+```bash
+composer validate --no-check-publish
+composer lint
+composer test
+```
+
+### Local WordPress via wp-env
+
+```bash
+npm install
+npm run wp-env:start
+npm run wp-env:cli
+npm run wp-env:test-cli
+npm run wp-env:stop
+```
+
+`wp-env` requires Docker.
+
+## Examples
+
+### Default search
+
+```php
+$results = WDK\Search::find('conference');
+```
+
+### Secure Stripe payment intent
+
+```php
+$payment = WDK\Payments::create_payment([
+    'amount_cents' => 1500,
+    'currency' => 'usd',
+    'payment_method_id' => 'pm_123',
+    'confirm' => true,
+    'return_url' => 'https://example.com/payments/return',
+], ['sk_test_123'], WDK\Stripe_Rest_Api_Provider::class);
+```
+
+### Secure PayPal order
+
+```php
+$payment = WDK\Payments::create_payment([
+    'intent' => 'CAPTURE',
+    'purchase_units' => [[
+        'amount' => [
+            'currency_code' => 'USD',
+            'value' => '25.00',
+        ],
+    ]],
+    'return_url' => 'https://example.com/paypal/return',
+    'cancel_url' => 'https://example.com/paypal/cancel',
+], ['client-id', 'client-secret']);
+```
+
+### Secure Authorize.Net opaque token flow
+
+```php
+$payment = WDK\Payments::create_payment([
+    'amount' => 25.00,
+    'opaque_data' => [
+        'dataDescriptor' => 'COMMON.ACCEPT.INAPP.PAYMENT',
+        'dataValue' => 'opaque-token-value',
+    ],
+], ['api-login-id', 'transaction-key'], WDK\AuthorizeNet_Rest_API_Provider::class);
+```
+
+## Validation Status For 0.3.0
+
+This repository now ships with:
+
+- tracked `composer.lock`
+- tracked `package.json` and `.wp-env.json`
+- tracked PHPUnit bootstrap and suite
+- tracked GitHub Actions CI
+
+The repo validation currently covers:
+
+- PHP linting across `library/` and `tests/`
+- standalone smoke tests
+- PHPUnit regression coverage
+- wp-env CLI/test-cli boot verification
