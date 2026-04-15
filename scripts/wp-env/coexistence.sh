@@ -6,6 +6,7 @@ ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 WP_CMD=(npx wp-env run cli wp)
 THEME="wdk-shared-runtime-theme"
 BASE_URL="http://127.0.0.1:8888"
+COEXISTENCE_PATH="/wdk-coexistence/"
 ASSERT_DIR="wp-content/plugins/wp-development-kit/tests/fixtures/wp-env"
 
 run_wp() {
@@ -41,6 +42,44 @@ assert_clean_response() {
   require_absent "${html}" "Uncaught Error"
 }
 
+fetch_with_retry() {
+  local url="$1"
+  local attempts="${2:-5}"
+  local delay_seconds="${3:-1}"
+  local output=""
+  local attempt=1
+
+  while (( attempt <= attempts )); do
+    if output="$(curl -fsS "${url}" 2>/dev/null)"; then
+      printf '%s' "${output}"
+      return 0
+    fi
+
+    sleep "${delay_seconds}"
+    (( attempt++ ))
+  done
+
+  return 1
+}
+
+fetch_coexistence_page() {
+  local html=""
+
+  if html="$(fetch_with_retry "${BASE_URL}${COEXISTENCE_PATH}")"; then
+    printf '%s' "${html}"
+    return 0
+  fi
+
+  if html="$(fetch_with_retry "${BASE_URL}/?pagename=wdk-coexistence")"; then
+    printf '%s' "${html}"
+    return 0
+  fi
+
+  printf 'Unable to fetch the WDK coexistence page via pretty permalinks or query fallback.\n' >&2
+  run_wp post list --post_type=page --fields=ID,post_name,post_status,post_title >&2 || true
+  return 1
+}
+
 prepare_wordpress() {
   run_wp rewrite structure '/%postname%/' --hard >/dev/null
   run_wp option update blog_public 0 >/dev/null
@@ -54,7 +93,7 @@ same_version_scenario() {
   run_wp eval-file "${ASSERT_DIR}/assert-same-version.php"
 
   local html
-  html="$(curl -fsS "${BASE_URL}/wdk-coexistence/")"
+  html="$(fetch_coexistence_page)"
   assert_clean_response "${html}"
   require_output "${html}" "WDK_SHARED_RUNTIME_THEME"
   require_output "${html}" "THEME=theme-template-active"
@@ -70,7 +109,7 @@ mixed_version_scenario() {
   run_wp eval-file "${ASSERT_DIR}/assert-mixed-version.php"
 
   local html
-  html="$(curl -fsS "${BASE_URL}/wdk-coexistence/")"
+  html="$(fetch_coexistence_page)"
   assert_clean_response "${html}"
   require_output "${html}" "ALPHA=alpha-ok"
   require_output "${html}" "SECONDARY=legacy-ok"
@@ -84,7 +123,7 @@ legacy_eager_scenario() {
   run_wp eval-file "${ASSERT_DIR}/assert-legacy-eager.php"
 
   local html
-  html="$(curl -fsS "${BASE_URL}/wdk-coexistence/")"
+  html="$(fetch_coexistence_page)"
   assert_clean_response "${html}"
   require_output "${html}" "ALPHA=alpha-ok"
   require_output "${html}" "THEME=theme-template-active"

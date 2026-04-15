@@ -181,6 +181,13 @@ class StabilizationCompatibilityTest extends WdkTestCase
         $this->assertNotEmpty($this->deprecations());
     }
 
+    public function testStripeLegacyUppercaseApiAliasStillAutoloads(): void
+    {
+        $provider = new \WDK\Stripe_Rest_API_Provider('sk_test_123');
+
+        $this->assertInstanceOf(Stripe_Rest_Api_Provider::class, $provider);
+    }
+
     public function testAuthorizeNetRejectsUnsafeRawCardPayload(): void
     {
         $provider = new AuthorizeNet_Rest_API_Provider('login', 'key');

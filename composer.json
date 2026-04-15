@@ -19,7 +19,10 @@
   "autoload": {
     "psr-4": {
       "WDK\\": "library"
-    }
+    },
+    "classmap": [
+      "library/Stripe_Rest_API_Provider.php"
+    ]
   },
   "authors": [
     {

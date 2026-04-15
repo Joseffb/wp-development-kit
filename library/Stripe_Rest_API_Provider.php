@@ -1,6 +1,6 @@
 <?php
 /**
- * Contains the Stripe_Rest_Api_Provider class.
+ * Contains the Stripe_Rest_Api_Provider class and its legacy alias.
  *
  * @package WDK
  */
@@ -11,6 +11,7 @@ namespace WDK;
 /**
  * Provides the Stripe REST API Provider integration implementation.
  */
+if (!class_exists(__NAMESPACE__ . '\\Stripe_Rest_Api_Provider', false)) {
 class Stripe_Rest_Api_Provider extends Payment_Provider
 {
     private string $api_secret_key;
@@ -167,4 +168,14 @@ class Stripe_Rest_Api_Provider extends Payment_Provider
             default => 'pending',
         };
     }
+}
+}
+
+/**
+ * Legacy alias kept for backwards compatibility with historical WDK naming.
+ */
+if (!class_exists(__NAMESPACE__ . '\\Stripe_Rest_API_Provider', false)) {
+class Stripe_Rest_API_Provider extends Stripe_Rest_Api_Provider
+{
+}
 }
