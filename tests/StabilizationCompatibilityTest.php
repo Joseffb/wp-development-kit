@@ -262,4 +262,25 @@ class StabilizationCompatibilityTest extends WdkTestCase
         $this->assertCount(1, $termsAfterSecondRun);
         $this->assertTrue((bool) get_option('tax_term_Event Day_installed'));
     }
+
+    public function testProcessPostsCreatesConfiguredPageImmediatelyAfterInit(): void
+    {
+        do_action('init');
+
+        System::ProcessPosts([[
+            'post_type' => 'page',
+            'post_title' => 'WDK Coexistence',
+            'post_content' => 'Shared runtime coexistence page',
+            'post_meta' => [
+                'slug' => 'wdk-coexistence',
+                'post_status' => 'publish',
+            ],
+        ]]);
+
+        $page = get_page_by_path('wdk-coexistence', OBJECT, 'page');
+
+        $this->assertInstanceOf(WP_Post::class, $page);
+        $this->assertSame('WDK Coexistence', $page->post_title);
+        $this->assertSame('publish', $page->post_status);
+    }
 }

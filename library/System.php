@@ -467,9 +467,16 @@ class System
                 $post_title = !empty($config['post_title']) ? $config['post_title'] : [];
                 $post_content = !empty($config['post_content']) ? $config['post_content'] : [];
                 $post_meta = !empty($config['post_meta']) ? $config['post_meta'] : [];
-                add_action('init', function () use ($post_type, $post_title, $post_content, $post_meta) {
+                $creator = static function () use ($post_type, $post_title, $post_content, $post_meta): void {
                     Post::CreatePost($post_type, $post_title, $post_content, $post_meta);
-                }, 10000);
+                };
+
+                if (function_exists('did_action') && did_action('init') > 0) {
+                    $creator();
+                    continue;
+                }
+
+                add_action('init', $creator, 10000);
             }
         }
     }
