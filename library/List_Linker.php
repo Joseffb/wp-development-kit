@@ -1,4 +1,10 @@
 <?php
+/**
+ * Contains the List_Linker class.
+ *
+ * @package WDK
+ */
+
 
 namespace WDK;
 /**

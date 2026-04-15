@@ -1,9 +1,18 @@
 <?php
+/**
+ * Test coverage for the Shadow component.
+ *
+ * @package WDK\Tests
+ */
+
 
 declare(strict_types=1);
 
 use WDK\Shadow;
 
+/**
+ * Exercises Shadow behavior.
+ */
 class ShadowTest extends WdkTestCase
 {
     protected static string $postType = 'shadow_test_post_type';

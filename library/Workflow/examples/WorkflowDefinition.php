@@ -1,10 +1,19 @@
 <?php
+/**
+ * Example workflow definition used by the WDK workflow subsystem.
+ *
+ * @package WDK
+ */
+
 namespace YourApp\Workflow\Definitions;
 
 use WDK\Workflow\Nodes\Node;
 use WDK\Workflow\Transitions\Transition;
 use WDK\Workflow\Conditions\ConditionFactory;
 
+/**
+ * Provides the Workflow Definition component.
+ */
 class WorkflowDefinition {
     private $nodes = [];
     private $startNode;

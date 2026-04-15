@@ -1,4 +1,10 @@
 <?php
+/**
+ * Contains the Taxonomy class.
+ *
+ * @package WDK
+ */
+
 
 namespace WDK;
 

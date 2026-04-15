@@ -4,7 +4,7 @@ WP Development Kit, or WDK, is a WordPress development library for building cont
 
 ## Breaking Change Notice
 
-WDK `0.3.0` is a stabilization release with compatibility shims.
+WDK `0.4.0` is a stabilization release with compatibility shims.
 
 Unavoidable breaking changes:
 
@@ -13,7 +13,7 @@ Unavoidable breaking changes:
 - Raw card-number / PAN / CVV server-side payloads are rejected.
 - The repo now tracks Composer, PHPUnit, CI, and local wp-env tooling as part of the supported developer contract.
 
-Compatibility shims included in `0.3.0`:
+Compatibility shims included in `0.4.0`:
 
 - Legacy short provider names such as `PayPal_Rest_API_Provider` and `WP_Local_Search_Provider` still work.
 - Deprecated provider-constructor argument patterns are still normalized where they can be adapted safely.
@@ -63,6 +63,38 @@ require_once __DIR__ . '/vendor/autoload.php';
 
 WDK\System::Start();
 ```
+
+### Shared runtime bootstrap for themes and plugins
+
+If a WDK-based theme/template and one or more WDK-based plugins can be active in the same request, do not call `WDK\System::Start()` eagerly at file scope.
+
+Instead, include the runtime loader and register the bundle:
+
+```php
+require_once __DIR__ . '/vendor/joseffb/wp-development-kit/wdk-runtime-loader.php';
+
+wdk_register_runtime_bundle([
+    'id' => 'my-bundle-runtime',
+    'bundle_id' => 'my-bundle',
+    'version' => '0.4.0',
+    'autoloader' => __DIR__ . '/vendor/autoload.php',
+    'root' => __DIR__,
+], [
+    'id' => 'my-bundle',
+    'type' => 'plugin',
+    'root' => __DIR__,
+    'config_paths' => [__DIR__ . '/wdk/configs'],
+    'template_paths' => [__DIR__ . '/wdk/views'],
+    'bootstrap_file' => __DIR__ . '/wdk/bootstrap.php',
+]);
+```
+
+WDK now supports one shared runtime per request:
+
+- highest version wins
+- equal-version tie goes to the first registered runtime
+- older bundles attach to the winner and rely on compatibility shims
+- eager `System::Start()` in a multi-bundle request is deprecated and warned
 
 ## Project Layout
 
@@ -117,7 +149,7 @@ add_filter('wdk_context_templatename', function ($context) {
 
 ## Compatibility Shims
 
-`0.3.0` keeps older integrations moving where it is safe to do so.
+`0.4.0` keeps older integrations moving where it is safe to do so.
 
 ### Search providers
 
@@ -243,7 +275,8 @@ Rejected:
 4. Move provider references toward fully qualified class names.
 5. Replace raw card payloads with secure tokenized or hosted-flow inputs.
 6. Update any payment consumers to read the normalized response shape.
-7. Re-run the repo validation commands below.
+7. Move multi-bundle themes/plugins to the shared runtime loader bootstrap.
+8. Re-run the repo validation commands below.
 
 ## Developer Tooling
 
@@ -253,19 +286,47 @@ Rejected:
 composer validate --no-check-publish
 composer lint
 composer test
+composer ci:php
+composer ci:wp-env
+composer ci:coexistence
+composer ci:local
+composer ci:github
+composer ci:green
 ```
 
 ### Local WordPress via wp-env
 
 ```bash
-npm install
+npm ci
 npm run wp-env:start
 npm run wp-env:cli
 npm run wp-env:test-cli
+npm run wp-env:coexistence
 npm run wp-env:stop
 ```
 
 `wp-env` requires Docker.
+
+### Local GitHub Actions parity
+
+WDK now supports running the GitHub workflow locally before pushing.
+
+Install `act` on macOS with Homebrew:
+
+```bash
+brew install act
+```
+
+Then run:
+
+```bash
+composer ci:green
+```
+
+This performs:
+
+- host preflight (`composer`, PHPUnit, lint, wp-env, coexistence suite)
+- local GitHub Actions execution through `act`
 
 ## Examples
 
@@ -315,7 +376,7 @@ $payment = WDK\Payments::create_payment([
 ], ['api-login-id', 'transaction-key'], WDK\AuthorizeNet_Rest_API_Provider::class);
 ```
 
-## Validation Status For 0.3.0
+## Validation Status For 0.4.0
 
 This repository now ships with:
 

@@ -62,7 +62,34 @@
     ],
     "lint": [
       "find library tests -name '*.php' -print0 | xargs -0 -n1 php -l"
-    ]
+    ],
+        "ci:doctor": [
+            "bash ./scripts/ci/doctor.sh"
+        ],
+        "ci:php": [
+            "Composer\\Config::disableProcessTimeout",
+            "bash ./scripts/ci/php.sh"
+        ],
+        "ci:wp-env": [
+            "Composer\\Config::disableProcessTimeout",
+            "bash ./scripts/ci/wp-env.sh"
+        ],
+        "ci:coexistence": [
+            "Composer\\Config::disableProcessTimeout",
+            "bash ./scripts/ci/coexistence.sh"
+        ],
+        "ci:local": [
+            "Composer\\Config::disableProcessTimeout",
+            "bash ./scripts/ci/local.sh"
+        ],
+        "ci:github": [
+            "Composer\\Config::disableProcessTimeout",
+            "bash ./scripts/ci/act.sh"
+        ],
+        "ci:green": [
+            "Composer\\Config::disableProcessTimeout",
+            "bash ./scripts/ci/green.sh"
+        ]
   },
   "repositories": [
     {

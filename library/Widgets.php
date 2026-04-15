@@ -1,4 +1,10 @@
 <?php
+/**
+ * Contains the Widgets class.
+ *
+ * @package WDK
+ */
+
 
 namespace WDK;
 

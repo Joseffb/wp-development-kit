@@ -1,8 +1,17 @@
 <?php
+/**
+ * Test coverage for the Relationship Handler component.
+ *
+ * @package WDK\Tests
+ */
+
 
 use WDK\PostInterface;
 use WDK\RelationshipHandler;
 
+/**
+ * Exercises Relationship Handler behavior.
+ */
 class RelationshipHandlerTest extends WdkTestCase
 {
     protected static $parent_post_id;

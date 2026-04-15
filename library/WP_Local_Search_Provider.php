@@ -1,7 +1,16 @@
 <?php
+/**
+ * Contains the WP_Local_Search_Provider class.
+ *
+ * @package WDK
+ */
+
 
 namespace WDK;
 
+/**
+ * Provides the WP Local Search Provider integration implementation.
+ */
 class WP_Local_Search_Provider extends WP_Search_Provider
 {
     public function search($query, $args = []): \WP_Query

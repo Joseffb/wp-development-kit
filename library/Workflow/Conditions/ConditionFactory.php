@@ -1,7 +1,16 @@
 <?php
+/**
+ * Contains the ConditionFactory class.
+ *
+ * @package WDK
+ */
+
 
 namespace WDK\Workflow\Conditions;
 
+/**
+ * Creates instances for the Condition Factory component.
+ */
 class ConditionFactory {
     public static function create($type, $parameters = []) {
         // Attempt to create a condition from the WDK namespace

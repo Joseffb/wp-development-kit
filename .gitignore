@@ -14,6 +14,7 @@ composer.phar
 # NPM
 node_modules/
 node_modules/*
+.act-home/
 
 # IntelliJ - PhpStorm and PyCharm
 .idea/

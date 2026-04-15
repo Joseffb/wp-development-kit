@@ -1,4 +1,10 @@
 <?php
+/**
+ * Contains the GraphQL_Search_Provider class.
+ *
+ * @package WDK
+ */
+
 
 namespace WDK;
 

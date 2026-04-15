@@ -1,18 +1,36 @@
 <?php
+/**
+ * Test support definitions for the WP Post component.
+ *
+ * @package WDK\Tests
+ */
+
 
 declare(strict_types=1);
 
 namespace {
+    /**
+     * Provides a lightweight WP_Post stub for tests.
+     */
     class WP_Post {
         public int $ID;
         public function __construct(int $id = 1) { $this->ID = $id; }
     }
+    /**
+     * Provides a lightweight WP_Error stub for tests.
+     */
     class WP_Error {}
+    /**
+     * Provides a lightweight WP_Query stub for tests.
+     */
     class WP_Query {
         public function __construct($args = []) {}
         public function have_posts() { return false; }
         public function get_posts() { return []; }
     }
+    /**
+     * Provides a lightweight WP_Comment stub for tests.
+     */
     class WP_Comment {}
 
     function post_type_exists($postType) { return true; }
@@ -53,6 +71,9 @@ namespace {
 }
 
 namespace WDK {
+    /**
+     * Provides the Search component.
+     */
     class Search {
         public function __construct($provider = null) {}
         public function search($term, $args) {

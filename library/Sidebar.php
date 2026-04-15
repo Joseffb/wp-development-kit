@@ -1,4 +1,10 @@
 <?php
+/**
+ * Contains the Sidebar class.
+ *
+ * @package WDK
+ */
+
 
 namespace WDK;
 

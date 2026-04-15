@@ -1,4 +1,10 @@
 <?php
+/**
+ * Contains the Utility class.
+ *
+ * @package WDK
+ */
+
 
 namespace WDK;
 

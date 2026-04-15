@@ -1,9 +1,18 @@
 <?php
+/**
+ * Contains the Node class.
+ *
+ * @package WDK
+ */
+
 
 namespace WDK\Workflow\Nodes;
 
 use WDK\Workflow\Transitions\Transition;
 
+/**
+ * Provides the Node component.
+ */
 class Node {
     private $id;
     private $actions = [];

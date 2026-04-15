@@ -1,8 +1,17 @@
 <?php
+/**
+ * Test coverage for the PostInterface component.
+ *
+ * @package WDK\Tests
+ */
+
 
 use WDK\PostInterface;
 use WDK\MetaHandler;
 
+/**
+ * Exercises PostInterface behavior.
+ */
 class PostInterfaceTest extends WdkTestCase
 {
     protected static $post_id;

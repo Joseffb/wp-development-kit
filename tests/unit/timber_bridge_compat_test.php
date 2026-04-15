@@ -1,7 +1,16 @@
 <?php
+/**
+ * Test support definitions for the Timber component.
+ *
+ * @package WDK\Tests
+ */
+
 
 declare(strict_types=1);
 
+/**
+ * Provides a lightweight Timber stub for tests.
+ */
 class Timber
 {
     public static array $locations = [];
@@ -28,6 +37,9 @@ class Timber
     }
 }
 
+/**
+ * Provides a lightweight TimberPost stub for tests.
+ */
 class TimberPost
 {
     public $value;
@@ -38,6 +50,9 @@ class TimberPost
     }
 }
 
+/**
+ * Provides a lightweight TimberPostQuery stub for tests.
+ */
 class TimberPostQuery implements IteratorAggregate
 {
     public function getIterator(): Traversable

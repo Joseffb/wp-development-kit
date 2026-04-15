@@ -1,9 +1,18 @@
 <?php
+/**
+ * Test support definitions for the WDK Test Case component.
+ *
+ * @package WDK\Tests
+ */
+
 
 declare(strict_types=1);
 
 use PHPUnit\Framework\TestCase;
 
+/**
+ * Provides shared helpers and state resets for WDK test cases.
+ */
 abstract class WdkTestCase extends TestCase
 {
     protected function setUp(): void

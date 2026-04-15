@@ -1,7 +1,16 @@
 <?php
+/**
+ * Contains the EmailAction class.
+ *
+ * @package WDK
+ */
+
 
 namespace WDK\Workflow\Actions;
 
+/**
+ * Provides the Email Action component.
+ */
 class EmailAction extends WorkflowAction {
     public function execute(&$context) {
         $to = $this->parameters['to'];

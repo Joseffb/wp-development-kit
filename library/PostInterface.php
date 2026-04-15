@@ -1,4 +1,10 @@
 <?php
+/**
+ * Contains the PostInterface support classes.
+ *
+ * @package WDK
+ */
+
 
 namespace WDK;
 

@@ -1,8 +1,17 @@
 <?php
+/**
+ * Test coverage for the Media Handler component.
+ *
+ * @package WDK\Tests
+ */
+
 
 use WDK\PostInterface;
 use WDK\MediaHandler;
 
+/**
+ * Exercises Media Handler behavior.
+ */
 class MediaHandlerTest extends WdkTestCase
 {
     protected static $post_id;

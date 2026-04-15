@@ -1,8 +1,17 @@
 <?php
+/**
+ * Test coverage for the Taxonomy Handler component.
+ *
+ * @package WDK\Tests
+ */
+
 
 use WDK\PostInterface;
 use WDK\TaxonomyHandler;
 
+/**
+ * Exercises Taxonomy Handler behavior.
+ */
 class TaxonomyHandlerTest extends WdkTestCase
 {
     protected static $post_id;

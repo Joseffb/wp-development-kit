@@ -1,7 +1,16 @@
 <?php
+/**
+ * Test support definitions for the WP Error Stub component.
+ *
+ * @package WDK\Tests
+ */
+
 
 declare(strict_types=1);
 
+/**
+ * Provides a lightweight WpErrorStub stub for tests.
+ */
 class WpErrorStub {
     public function get_error_code() { return ''; }
     public function get_error_data($key = null) { return null; }

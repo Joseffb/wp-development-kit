@@ -1,4 +1,10 @@
 <?php
+/**
+ * Contains the TimberBridge class.
+ *
+ * @package WDK
+ */
+
 
 namespace WDK;
 

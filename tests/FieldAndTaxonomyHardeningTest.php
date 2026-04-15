@@ -1,10 +1,19 @@
 <?php
+/**
+ * Test coverage for the Field And Taxonomy Hardening component.
+ *
+ * @package WDK\Tests
+ */
+
 
 declare(strict_types=1);
 
 use WDK\Field;
 use WDK\Taxonomy;
 
+/**
+ * Exercises Field And Taxonomy Hardening behavior.
+ */
 class FieldAndTaxonomyHardeningTest extends WdkTestCase
 {
     protected function setUp(): void

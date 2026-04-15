@@ -1,9 +1,18 @@
 <?php
+/**
+ * Contains the ProviderResolver class.
+ *
+ * @package WDK
+ */
+
 
 namespace WDK;
 
 use RuntimeException;
 
+/**
+ * Provides the Provider Resolver component.
+ */
 class ProviderResolver
 {
     /**

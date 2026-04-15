@@ -1,4 +1,10 @@
 <?php
+/**
+ * Contains the UtilityTrait class.
+ *
+ * @package WDK
+ */
+
 
 namespace WDK;
 

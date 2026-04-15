@@ -1,9 +1,16 @@
 <?php
+/**
+ * Contains the System class.
+ *
+ * @package WDK
+ */
+
 
 namespace WDK;
 
 use DirectoryIterator;
 use JsonException;
+use RuntimeException;
 
 /**
  * Class Install
@@ -16,59 +23,66 @@ class System
      */
     public static function Start(array $locations = []): bool
     {
-        $trace = debug_backtrace();
-        $call_path_dir = dirname($trace[0]['file']);
-        if (!defined('WDK_CONFIG_BASE')) {
-            if (is_dir($call_path_dir . "/wdk/configs")) {
-                define("WDK_CONFIG_BASE", $call_path_dir . "/wdk/configs");
-            } else if ($config_base = get_option('WDK_CONFIG_BASE')) {
-                define("WDK_CONFIG_BASE", $config_base);
-            } else if (is_dir(get_stylesheet_directory() . '/wdk/config')) {
-                // WP theme based config location
-                define("WDK_CONFIG_BASE", get_stylesheet_directory() . '/wdk/config');
-            } else {
-                define("WDK_CONFIG_BASE", dirname(__DIR__) . "/configs");
+        if (function_exists('wdk_runtime_info')) {
+            $runtimeInfo = wdk_runtime_info();
+            if (!empty($runtimeInfo['candidates']) && empty($runtimeInfo['booted'])) {
+                Compatibility::warn(__METHOD__, 'Calling System::Start() eagerly is unsupported when WDK runtime candidates are already registered. Use the shared runtime bootstrap shim instead.');
+                if (function_exists('wdk_runtime_add_notice')) {
+                    wdk_runtime_add_notice('Legacy WDK eager bootstrap was detected before the shared runtime selected a winner. Use the runtime loader shim for multi-bundle requests.', 'warning');
+                }
+                return false;
+            }
+
+            if (!empty($runtimeInfo['booted']) && count($runtimeInfo['bundles'] ?? []) > 1) {
+                Compatibility::warn(__METHOD__, 'Calling System::Start() after the shared runtime booted is deprecated. Register the bundle with the runtime loader instead.');
+                if (function_exists('wdk_runtime_add_notice')) {
+                    wdk_runtime_add_notice('Legacy WDK eager bootstrap was skipped because the shared runtime already booted this request.', 'warning');
+                }
+                return false;
             }
         }
 
-        if (!defined('WDK_TEMPLATE_LOCATIONS_BASE')) {
-            if (is_dir($call_path_dir . "/wdk/views")) {
-                define("WDK_TEMPLATE_LOCATIONS_BASE", [$call_path_dir . "/wdk/views"]);
-            } else if ($config_base = get_option('WDK_TEMPLATE_LOCATIONS_BASE')) {
-                define("WDK_TEMPLATE_LOCATIONS_BASE", $config_base);
-            } else if (is_dir(plugin_dir_path(__FILE__) . '/wdk/views')) {
-                // template override locations
-                define("WDK_TEMPLATE_LOCATIONS_BASE", [plugin_dir_path(__FILE__) . 'wdk/views']);
-            } else if (is_dir(get_stylesheet_directory() . '/wdk/views')) {
-                // template override locations
-                define("WDK_TEMPLATE_LOCATIONS_BASE", [get_stylesheet_directory() . '/wdk/views']);
-            } else if (is_dir(dirname(__DIR__) . '/views')) {
-                // template override locations
-                define("WDK_TEMPLATE_LOCATIONS_BASE", [dirname(__DIR__) . '/views']);
-            } else {
-                define("WDK_TEMPLATE_LOCATIONS_BASE", []);
-            }
+        $trace = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 2);
+        $callerFile = $trace[1]['file'] ?? dirname(__DIR__);
+        $callPathDir = dirname($callerFile);
+
+        return self::bootBundles([
+            self::legacyBundleDefinition($callPathDir, $locations),
+        ], [
+            'id' => 'legacy-runtime',
+            'bundle_id' => 'legacy-runtime',
+            'version' => defined('WDK_VERSION') ? WDK_VERSION : '0.0.0',
+            'root' => dirname(__DIR__),
+        ]);
+    }
+
+    public static function bootBundles(array $bundles, array $runtime = []): bool
+    {
+        if ($bundles === []) {
+            return false;
         }
 
-
-        //Setup json based configuration
         try {
-            self::Setup();
-            //Setup Twig template system
-            //looks for twig files in the following locations.
-            Template::Setup(array_merge(WDK_TEMPLATE_LOCATIONS_BASE, [$call_path_dir . "/wdk/views", //for child templates
-                    get_stylesheet_directory() . "/wdk/views", //for child templates
-                    get_stylesheet_directory(), //for child templates
-                    get_stylesheet_directory() . "/wdk/views", //for child templates
-                    get_template_directory(),
-                    get_template_directory() . "/wdk/views",
-                    dirname(__DIR__) . '/views']
-            ));
+            self::defineLegacyPathConstants($bundles, $runtime);
+            self::validateBundleConfigs($bundles);
+
+            foreach ($bundles as $bundle) {
+                foreach (($bundle['config_paths'] ?? []) as $configPath) {
+                    if (is_string($configPath) && is_dir($configPath)) {
+                        self::Setup($configPath);
+                    }
+                }
+            }
+
+            Template::Setup(self::templateLocationsForBundles($bundles, $runtime));
+
             return true;
-        } catch
-        (\Exception $e) {
+        } catch (\Throwable $throwable) {
             Utility::Log('JSON ERROR, Please validate config files.');
-            Utility::Log($e);
+            Utility::Log($throwable);
+            if (function_exists('wdk_runtime_add_notice')) {
+                wdk_runtime_add_notice('WDK shared runtime failed to boot: ' . $throwable->getMessage(), 'error');
+            }
             return false;
         }
     }
@@ -133,6 +147,185 @@ class System
             }
         }
         return null; //makes IDE happy
+    }
+
+    private static function legacyBundleDefinition(string $callPathDir, array $locations = []): array
+    {
+        $configPaths = [];
+        if (is_dir($callPathDir . '/wdk/configs')) {
+            $configPaths[] = $callPathDir . '/wdk/configs';
+        } elseif (is_dir($callPathDir . '/wdk/config')) {
+            $configPaths[] = $callPathDir . '/wdk/config';
+        } elseif ($configBase = get_option('WDK_CONFIG_BASE')) {
+            $configPaths[] = $configBase;
+        } elseif (is_dir(get_stylesheet_directory() . '/wdk/config')) {
+            $configPaths[] = get_stylesheet_directory() . '/wdk/config';
+        } else {
+            $configPaths[] = dirname(__DIR__) . '/configs';
+        }
+
+        $templatePaths = [];
+        if ($locations !== []) {
+            $templatePaths = $locations;
+        } elseif (is_dir($callPathDir . '/wdk/views')) {
+            $templatePaths[] = $callPathDir . '/wdk/views';
+        } elseif ($templateBase = get_option('WDK_TEMPLATE_LOCATIONS_BASE')) {
+            $templatePaths = (array) $templateBase;
+        } elseif (is_dir(get_stylesheet_directory() . '/wdk/views')) {
+            $templatePaths[] = get_stylesheet_directory() . '/wdk/views';
+        } elseif (is_dir(dirname(__DIR__) . '/views')) {
+            $templatePaths[] = dirname(__DIR__) . '/views';
+        }
+
+        return [
+            'id' => 'legacy-bundle',
+            'type' => 'plugin',
+            'root' => $callPathDir,
+            'config_paths' => self::filterExistingPaths($configPaths),
+            'template_paths' => self::filterExistingPaths($templatePaths),
+            'bootstrap_file' => null,
+            'version' => defined('WDK_VERSION') ? WDK_VERSION : '0.0.0',
+            'order' => 0,
+        ];
+    }
+
+    private static function defineLegacyPathConstants(array $bundles, array $runtime = []): void
+    {
+        $configBase = null;
+        $templateBase = null;
+
+        foreach ($bundles as $bundle) {
+            if ($configBase === null && !empty($bundle['config_paths'][0])) {
+                $configBase = $bundle['config_paths'][0];
+            }
+
+            if ($templateBase === null && !empty($bundle['template_paths'])) {
+                $templateBase = self::templateLocationsForBundles($bundles, $runtime);
+            }
+        }
+
+        if (!defined('WDK_CONFIG_BASE')) {
+            define('WDK_CONFIG_BASE', $configBase ?? dirname(__DIR__) . '/configs');
+        }
+
+        if (!defined('WDK_TEMPLATE_LOCATIONS_BASE')) {
+            define('WDK_TEMPLATE_LOCATIONS_BASE', $templateBase ?? []);
+        }
+    }
+
+    private static function templateLocationsForBundles(array $bundles, array $runtime = []): array
+    {
+        $locations = [];
+
+        foreach ($bundles as $bundle) {
+            foreach (($bundle['template_paths'] ?? []) as $templatePath) {
+                if (is_string($templatePath) && is_dir($templatePath) && !in_array($templatePath, $locations, true)) {
+                    $locations[] = $templatePath;
+                }
+            }
+        }
+
+        $winnerRoot = rtrim((string) ($runtime['root'] ?? dirname(__DIR__)), DIRECTORY_SEPARATOR);
+        $internalViews = $winnerRoot . '/views';
+        if (is_dir($internalViews) && !in_array($internalViews, $locations, true)) {
+            $locations[] = $internalViews;
+        }
+
+        return $locations;
+    }
+
+    private static function filterExistingPaths(array $paths): array
+    {
+        $filtered = [];
+        foreach ($paths as $path) {
+            if (!is_string($path) || $path === '') {
+                continue;
+            }
+
+            $trimmed = rtrim($path, DIRECTORY_SEPARATOR);
+            if (is_dir($trimmed) && !in_array($trimmed, $filtered, true)) {
+                $filtered[] = $trimmed;
+            }
+        }
+
+        return $filtered;
+    }
+
+    private static function validateBundleConfigs(array $bundles): void
+    {
+        $catalog = [
+            'post type' => [
+                'files' => ['posttypes.json', 'post_types.json'],
+                'key' => static fn (array $config): ?string => isset($config['name']) ? sanitize_key((string) $config['name']) : null,
+            ],
+            'taxonomy' => [
+                'files' => ['taxonomies.json', 'taxonomy.json'],
+                'key' => static fn (array $config): ?string => isset($config['name']) ? sanitize_key((string) $config['name']) : null,
+            ],
+            'shortcode' => [
+                'files' => ['shortcodes.json', 'shortcode.json'],
+                'key' => static fn (array $config): ?string => isset($config['tag']) ? sanitize_key((string) $config['tag']) : null,
+            ],
+            'page' => [
+                'files' => ['pages.json', 'page.json'],
+                'key' => static function (array $config): ?string {
+                    $slug = Compatibility::getArrayValue((array) ($config['post_meta'] ?? []), ['slug']);
+                    $slug = $slug ?: ($config['post_title'] ?? null);
+                    return is_string($slug) && $slug !== '' ? sanitize_title($slug) : null;
+                },
+            ],
+        ];
+
+        $seen = [];
+
+        foreach ($bundles as $bundle) {
+            foreach (($bundle['config_paths'] ?? []) as $configPath) {
+                if (!is_dir($configPath)) {
+                    continue;
+                }
+
+                foreach (new DirectoryIterator($configPath) as $fileInfo) {
+                    if ($fileInfo->isDot() || !$fileInfo->isFile()) {
+                        continue;
+                    }
+
+                    $fileName = strtolower($fileInfo->getFilename());
+                    foreach ($catalog as $label => $descriptor) {
+                        if (!in_array($fileName, $descriptor['files'], true)) {
+                            continue;
+                        }
+
+                        $payload = json_decode(file_get_contents($fileInfo->getPathname()), true, 512, JSON_THROW_ON_ERROR);
+                        if (!is_array($payload)) {
+                            continue;
+                        }
+
+                        foreach ($payload as $config) {
+                            if (!is_array($config)) {
+                                continue;
+                            }
+
+                            $key = $descriptor['key']($config);
+                            if ($key === null || $key === '') {
+                                continue;
+                            }
+
+                            if (isset($seen[$label][$key]) && $seen[$label][$key] !== ($bundle['id'] ?? '')) {
+                                throw new RuntimeException(sprintf(
+                                    'WDK %s collision for "%s" between bundles "%s" and "%s".',
+                                    $label,
+                                    $key,
+                                    $seen[$label][$key],
+                                    $bundle['id'] ?? 'unknown-bundle'
+                                ));
+                            }
+
+                            $seen[$label][$key] = $bundle['id'] ?? 'unknown-bundle';
+                        }
+                    }
+                }
+            }
+        }
     }
 
     /**

@@ -1,7 +1,16 @@
 <?php
+/**
+ * Test support definitions for the WP Post component.
+ *
+ * @package WDK\Tests
+ */
+
 
 declare(strict_types=1);
 
+/**
+ * Provides a lightweight WP_Post stub for tests.
+ */
 class WP_Post {
     public int $ID;
     public string $post_type = 'book';
@@ -11,6 +20,9 @@ class WP_Post {
     public function __construct(int $id) { $this->ID = $id; }
 }
 
+/**
+ * Provides a lightweight WP_Term stub for tests.
+ */
 class WP_Term {
     public int $term_id;
     public string $name = 'Book A';
@@ -18,6 +30,9 @@ class WP_Term {
     public function __construct(int $id) { $this->term_id = $id; }
 }
 
+/**
+ * Provides a lightweight WP_Error stub for tests.
+ */
 class WP_Error {
     public function get_error_code() { return ''; }
     public function get_error_data($key = null) { return null; }

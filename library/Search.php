@@ -1,9 +1,18 @@
 <?php
+/**
+ * Contains the Search class.
+ *
+ * @package WDK
+ */
+
 
 namespace WDK;
 
 use RuntimeException;
 
+/**
+ * Provides the Search component.
+ */
 class Search
 {
     protected WP_Search_Provider $search_provider;

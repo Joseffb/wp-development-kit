@@ -1,4 +1,10 @@
 <?php
+/**
+ * Test bootstrap and WordPress compatibility stubs for the WDK test suite.
+ *
+ * @package WDK\Tests
+ */
+
 
 declare(strict_types=1);
 
@@ -74,6 +80,7 @@ function wdk_test_reset_state(): void
         'site_options' => [],
         'hooks' => [],
         'filters' => [],
+        'did_actions' => [],
         'deprecated' => [],
         'http_queue' => [],
         'last_http_request' => null,
@@ -102,9 +109,18 @@ function wdk_test_clear_runtime_state(): void
     $state['is_admin'] = true;
     $state['autosaves'] = [];
     $state['revisions'] = [];
+    $state['did_actions'] = [];
     $_GET = [];
     $_POST = [];
     $_REQUEST = [];
+
+    if (function_exists('wdk_reset_runtime_state_for_tests')) {
+        wdk_reset_runtime_state_for_tests();
+    }
+
+    if (class_exists('\WDK\Runtime', false)) {
+        \WDK\Runtime::resetForTests();
+    }
 }
 
 function wdk_test_create_nonce(string $action): string
@@ -314,6 +330,9 @@ function wdk_test_query_posts(array $args): array
     return $posts;
 }
 
+/**
+ * Provides a lightweight WP_Post stub for tests.
+ */
 class WP_Post
 {
     public int $ID = 0;
@@ -338,6 +357,9 @@ class WP_Post
     }
 }
 
+/**
+ * Provides a lightweight WP_Term stub for tests.
+ */
 class WP_Term
 {
     public int $term_id = 0;
@@ -355,6 +377,9 @@ class WP_Term
     }
 }
 
+/**
+ * Provides a lightweight WP_Comment stub for tests.
+ */
 class WP_Comment
 {
     public int $comment_ID = 0;
@@ -372,6 +397,9 @@ class WP_Comment
     }
 }
 
+/**
+ * Provides a lightweight WP_Error stub for tests.
+ */
 class WP_Error
 {
     private string $code;
@@ -401,6 +429,9 @@ class WP_Error
     }
 }
 
+/**
+ * Provides a lightweight WP_Query stub for tests.
+ */
 class WP_Query
 {
     public array $query;
@@ -462,8 +493,15 @@ function remove_action(string $hook, callable $callback, int $priority = 10): bo
 
 function do_action(string $hook, ...$args): void
 {
+    $state = &wdk_test_state();
+    $state['did_actions'][$hook] = (int) ($state['did_actions'][$hook] ?? 0) + 1;
     $callbacks = wdk_test_state()['hooks'][$hook] ?? [];
     wdk_test_invoke_callbacks($callbacks, $args, false);
+}
+
+function did_action(string $hook): int
+{
+    return (int) (wdk_test_state()['did_actions'][$hook] ?? 0);
 }
 
 function add_filter(string $hook, callable $callback, int $priority = 10): bool
@@ -1517,5 +1555,6 @@ function wp_remote_retrieve_headers(array|WP_Error $response): array
 
 wdk_test_reset_state();
 
+require_once dirname(__DIR__) . '/wdk-runtime-loader.php';
 require_once dirname(__DIR__) . '/vendor/autoload.php';
 require_once __DIR__ . '/WdkTestCase.php';

@@ -1,7 +1,16 @@
 <?php
+/**
+ * Contains the CiviCRM_Search_Provider class.
+ *
+ * @package WDK
+ */
+
 
 namespace WDK;
 
+/**
+ * Provides the Civi CRM Search Provider integration implementation.
+ */
 class CiviCRM_Search_Provider extends WP_Search_Provider
 {
 

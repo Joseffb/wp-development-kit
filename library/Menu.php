@@ -1,4 +1,10 @@
 <?php
+/**
+ * Contains the Menu class.
+ *
+ * @package WDK
+ */
+
 
 namespace WDK;/**
  * Class Menu - Help tools for Menu creation, placement and management.

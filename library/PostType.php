@@ -1,6 +1,15 @@
 <?php
+/**
+ * Contains the PostType class.
+ *
+ * @package WDK
+ */
+
 
 namespace WDK;
+/**
+ * Provides the Post Type component.
+ */
 class PostType
 {
 

@@ -8,6 +8,11 @@
     "SCRIPT_DEBUG": true
   },
   "mappings": {
-    "wp-content/mu-plugins/wp-development-kit-examples": "./examples"
+    "wp-content/mu-plugins/wp-development-kit-examples": "./examples",
+    "wp-content/themes/wdk-shared-runtime-theme": "./tests/fixtures/wp-env/themes/wdk-shared-runtime-theme",
+    "wp-content/plugins/wdk-fixture-alpha": "./tests/fixtures/wp-env/plugins/wdk-fixture-alpha",
+    "wp-content/plugins/wdk-fixture-beta": "./tests/fixtures/wp-env/plugins/wdk-fixture-beta",
+    "wp-content/plugins/wdk-fixture-legacy": "./tests/fixtures/wp-env/plugins/wdk-fixture-legacy",
+    "wp-content/plugins/wdk-fixture-eager": "./tests/fixtures/wp-env/plugins/wdk-fixture-eager"
   }
 }

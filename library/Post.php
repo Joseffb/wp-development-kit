@@ -1,4 +1,10 @@
 <?php
+/**
+ * Contains the Post class.
+ *
+ * @package WDK
+ */
+
 
 namespace WDK;
 /**

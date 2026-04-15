@@ -1,7 +1,16 @@
 <?php
+/**
+ * Contains the Stripe_Rest_Api_Provider class.
+ *
+ * @package WDK
+ */
+
 
 namespace WDK;
 
+/**
+ * Provides the Stripe REST API Provider integration implementation.
+ */
 class Stripe_Rest_Api_Provider extends Payment_Provider
 {
     private string $api_secret_key;

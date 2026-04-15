@@ -1,8 +1,17 @@
 <?php
+/**
+ * Test coverage for the Comments Handler component.
+ *
+ * @package WDK\Tests
+ */
+
 
 use WDK\PostInterface;
 use WDK\CommentsHandler;
 
+/**
+ * Exercises Comments Handler behavior.
+ */
 class CommentsHandlerTest extends WdkTestCase
 {
     protected static $post_id;

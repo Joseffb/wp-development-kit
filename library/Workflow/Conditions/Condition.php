@@ -1,7 +1,16 @@
 <?php
+/**
+ * Contains the Condition class.
+ *
+ * @package WDK
+ */
+
 
 namespace WDK\Workflow\Conditions;
 
+/**
+ * Provides the base implementation for Condition.
+ */
 abstract class Condition {
     protected $parameters;
 

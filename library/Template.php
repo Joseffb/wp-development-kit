@@ -1,9 +1,18 @@
 <?php
+/**
+ * Contains the Template class.
+ *
+ * @package WDK
+ */
+
 
 namespace WDK;
 
 use Twig\TwigFunction;
 
+/**
+ * Provides the Template component.
+ */
 class Template
 {
     private static $ext = ".twig";

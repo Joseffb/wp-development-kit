@@ -1,8 +1,17 @@
 <?php
+/**
+ * Test coverage for the Meta Handler component.
+ *
+ * @package WDK\Tests
+ */
+
 
 use WDK\PostInterface;
 use WDK\MetaHandler;
 
+/**
+ * Exercises Meta Handler behavior.
+ */
 class MetaHandlerTest extends WdkTestCase
 {
     protected static $post_id;

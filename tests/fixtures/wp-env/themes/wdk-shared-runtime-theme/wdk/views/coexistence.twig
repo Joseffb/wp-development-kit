@@ -1,0 +1,8 @@
+WDK_SHARED_RUNTIME_THEME
+THEME={{ theme_marker|default('missing') }}
+ALPHA={{ plugin_alpha_marker|default('missing') }}
+SECONDARY={{ plugin_secondary_marker|default('missing') }}
+WINNER={{ runtime_info.selected.id|default('missing') }}
+VERSION={{ runtime_info.selected.version|default('missing') }}
+BUNDLES={{ runtime_info.bundle_ids|join(',') }}
+NOTICES={{ runtime_info.notice_count|default(0) }}

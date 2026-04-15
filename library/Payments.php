@@ -1,9 +1,18 @@
 <?php
+/**
+ * Contains the Payments class.
+ *
+ * @package WDK
+ */
+
 
 namespace WDK;
 
 use WDK\Payment_Provider;
 
+/**
+ * Provides the Payments component.
+ */
 class Payments
 {
     protected Payment_Provider $payment_provider;

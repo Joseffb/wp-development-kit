@@ -1,4 +1,10 @@
 <?php
+/**
+ * Contains the Remote_API_Search_Provider class.
+ *
+ * @package WDK
+ */
+
 namespace WDK;
 
 /**

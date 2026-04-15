@@ -1,4 +1,10 @@
 <?php
+/**
+ * Contains the Field class.
+ *
+ * @package WDK
+ */
+
 
 namespace WDK;
 

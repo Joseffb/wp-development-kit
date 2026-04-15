@@ -1,7 +1,16 @@
 <?php
+/**
+ * Contains the PayPal_Rest_API_Provider class.
+ *
+ * @package WDK
+ */
+
 
 namespace WDK;
 
+/**
+ * Provides the Pay Pal REST API Provider integration implementation.
+ */
 class PayPal_Rest_API_Provider extends Payment_Provider
 {
     private string $client_id;

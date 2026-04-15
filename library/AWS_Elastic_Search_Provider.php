@@ -1,10 +1,19 @@
 <?php
+/**
+ * Contains the AWS_Elastic_Search_Provider class.
+ *
+ * @package WDK
+ */
+
 
 namespace WDK;
 
 use Elastic\Elasticsearch\ClientBuilder;
 use Elastic\Elasticsearch\Exception\AuthenticationException;
 
+/**
+ * Provides the AWS Elastic Search Provider integration implementation.
+ */
 class AWS_Elastic_Search_Provider extends WP_Search_Provider
 {
 

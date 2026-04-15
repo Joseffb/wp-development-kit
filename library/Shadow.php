@@ -1,4 +1,10 @@
 <?php
+/**
+ * Contains the Shadow class.
+ *
+ * @package WDK
+ */
+
 // Based on code from Human Made's Shadow Taxonomy plugin
 // Original source: https://github.com/humanmade/shadow-taxonomy
 

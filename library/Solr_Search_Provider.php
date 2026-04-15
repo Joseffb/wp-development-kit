@@ -1,4 +1,10 @@
 <?php
+/**
+ * Contains the Solr_Search_Provider class.
+ *
+ * @package WDK
+ */
+
 
 namespace WDK;
 
@@ -6,6 +12,9 @@ use SolrClient;
 use Solarium\Client;
 use Solarium\QueryType\Select\Query\Query;
 
+/**
+ * Provides the Solr Search Provider integration implementation.
+ */
 class Solr_Search_Provider extends WP_Search_Provider
 {
 

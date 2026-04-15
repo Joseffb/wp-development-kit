@@ -22,17 +22,8 @@ jobs:
           php-version: ${{ matrix.php-version }}
           coverage: none
 
-      - name: Validate Composer metadata
-        run: composer validate --no-check-publish
-
-      - name: Install Composer dependencies
-        run: composer install --no-interaction --prefer-dist
-
-      - name: Lint PHP
-        run: composer lint
-
-      - name: Run test suites
-        run: composer test
+      - name: Run PHP validation suite
+        run: bash ./scripts/ci/php.sh
 
   wp-env:
     runs-on: ubuntu-latest
@@ -41,24 +32,39 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.5'
+          coverage: none
+
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
           node-version: '20'
           cache: npm
 
-      - name: Install npm dependencies
-        run: npm install
+      - name: Run wp-env validation
+        run: bash ./scripts/ci/wp-env.sh
 
-      - name: Start wp-env
-        run: npm run wp-env:start
+  coexistence:
+    runs-on: ubuntu-latest
 
-      - name: Verify wp-env CLI
-        run: npm run wp-env:cli
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
 
-      - name: Verify wp-env test CLI
-        run: npm run wp-env:test-cli
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.5'
+          coverage: none
 
-      - name: Stop wp-env
-        if: always()
-        run: npm run wp-env:stop
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+
+      - name: Run coexistence suite
+        run: bash ./scripts/ci/coexistence.sh

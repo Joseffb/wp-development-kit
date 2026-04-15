@@ -1,7 +1,16 @@
 <?php
+/**
+ * Contains the Payment_Provider class.
+ *
+ * @package WDK
+ */
+
 
 namespace WDK;
 
+/**
+ * Provides the base implementation for Payment Provider.
+ */
 abstract class Payment_Provider
 {
     /**

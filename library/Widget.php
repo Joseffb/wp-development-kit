@@ -1,4 +1,10 @@
 <?php
+/**
+ * Contains the Widget class.
+ *
+ * @package WDK
+ */
+
 namespace WDK;
 
 use JsonException;

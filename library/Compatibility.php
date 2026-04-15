@@ -1,10 +1,19 @@
 <?php
+/**
+ * Contains the Compatibility class.
+ *
+ * @package WDK
+ */
+
 
 namespace WDK;
 
+/**
+ * Provides the Compatibility component.
+ */
 class Compatibility
 {
-    public static function warn(string $hook, string $message, string $version = '0.3.0'): void
+    public static function warn(string $hook, string $message, string $version = '0.4.0'): void
     {
         if (function_exists('_doing_it_wrong')) {
             _doing_it_wrong($hook, $message, $version);

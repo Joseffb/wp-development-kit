@@ -1,4 +1,10 @@
 <?php
+/**
+ * Contains the Shortcode class.
+ *
+ * @package WDK
+ */
+
 
 namespace WDK;
 

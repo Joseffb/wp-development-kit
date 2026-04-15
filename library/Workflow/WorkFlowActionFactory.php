@@ -1,7 +1,16 @@
 <?php
+/**
+ * Contains the WorkflowActionFactory class.
+ *
+ * @package WDK
+ */
+
 
 namespace WDK\Workflow;
 
+/**
+ * Creates instances for the Workflow Action Factory component.
+ */
 class WorkflowActionFactory {
     public static function create($type, $parameters) {
         $className = "\\WDK\\Workflow\\Actions\\" . ucfirst($type) . "Action";

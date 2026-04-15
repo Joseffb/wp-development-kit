@@ -1,6 +1,15 @@
 <?php
+/**
+ * Contains the WorkflowEngine class.
+ *
+ * @package WDK
+ */
+
 namespace WDK\Workflow;
 
+/**
+ * Provides the Workflow Engine component.
+ */
 class WorkflowEngine {
     private $workflowDefinition;
     private $currentNode;

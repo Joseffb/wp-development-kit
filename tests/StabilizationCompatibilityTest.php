@@ -1,4 +1,10 @@
 <?php
+/**
+ * Test coverage for the Stabilization Compatibility component.
+ *
+ * @package WDK\Tests
+ */
+
 
 declare(strict_types=1);
 
@@ -10,6 +16,9 @@ use WDK\Search;
 use WDK\Stripe_Rest_Api_Provider;
 use WDK\System;
 
+/**
+ * Exercises Stabilization Compatibility behavior.
+ */
 class StabilizationCompatibilityTest extends WdkTestCase
 {
     protected function setUp(): void

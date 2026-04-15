@@ -1,7 +1,16 @@
 <?php
+/**
+ * Contains the WorkflowAction class.
+ *
+ * @package WDK
+ */
+
 
 namespace WDK\Workflow\Actions;
 
+/**
+ * Provides the base implementation for Workflow Action.
+ */
 abstract class WorkflowAction {
     protected $parameters;
 

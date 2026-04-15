@@ -24,6 +24,9 @@
  * @link          http://book.cakephp.org/2.0/en/core-utility-libraries/inflector.html
  */
 namespace WDK;
+/**
+ * Provides the Inflector component.
+ */
 class Inflector {
 
 	/**

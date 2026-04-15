@@ -1,4 +1,10 @@
 <?php
+/**
+ * Workflow execution example script for the sample WDK workflow definition.
+ *
+ * @package WDK
+ */
+
 use WDK\Workflow\WorkflowEngine;
 use YourApp\Workflow\Definitions\WorkflowDefinition;
 

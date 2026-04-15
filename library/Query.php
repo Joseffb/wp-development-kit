@@ -1,4 +1,10 @@
 <?php
+/**
+ * Contains the Query class.
+ *
+ * @package WDK
+ */
+
 
 namespace WDK;
 use Timber\PostQuery;

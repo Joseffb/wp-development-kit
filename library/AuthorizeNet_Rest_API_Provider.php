@@ -1,7 +1,16 @@
 <?php
+/**
+ * Contains the AuthorizeNet_Rest_API_Provider class.
+ *
+ * @package WDK
+ */
+
 
 namespace WDK;
 
+/**
+ * Provides the Authorize Net REST API Provider integration implementation.
+ */
 class AuthorizeNet_Rest_API_Provider extends Payment_Provider
 {
     private string $api_login_id;

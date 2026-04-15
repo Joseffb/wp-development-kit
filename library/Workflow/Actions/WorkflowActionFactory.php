@@ -1,9 +1,18 @@
 <?php
+/**
+ * Contains the WorkflowActionFactory class.
+ *
+ * @package WDK
+ */
+
 
 namespace WDK\Workflow\Actions;
 
 use WDK\Workflow\Actions\WorkflowAction;
 
+/**
+ * Creates instances for the Workflow Action Factory component.
+ */
 class WorkflowActionFactory {
     /**
      * @throws \RuntimeException

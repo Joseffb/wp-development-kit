@@ -1,9 +1,18 @@
 <?php
+/**
+ * Contains the Transition class.
+ *
+ * @package WDK
+ */
+
 
 namespace WDK\Workflow\Transitions;
 
 use WDK\Workflow\Conditions\Condition;
 
+/**
+ * Provides the Transition component.
+ */
 class Transition {
     private $condition;
     private $nextNode;
