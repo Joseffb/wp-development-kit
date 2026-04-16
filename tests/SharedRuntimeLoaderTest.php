@@ -127,6 +127,7 @@ final class SharedRuntimeLoaderTest extends WdkTestCase
     public function testLateRegisteredThemeBundleAttachesToBootedRuntimeAndProcessesConfig(): void
     {
         $themeRoot = __DIR__ . '/fixtures/wp-env/themes/wdk-shared-runtime-theme';
+        $this->assertFileExists($themeRoot . '/wdk/configs/pages.json');
 
         wdk_register_runtime_candidate([
             'id' => 'core-runtime',

@@ -1,0 +1,11 @@
+[
+  {
+    "post_type": "page",
+    "post_title": "WDK Coexistence",
+    "post_content": "Shared runtime coexistence page",
+    "post_meta": {
+      "slug": "wdk-coexistence",
+      "post_status": "publish"
+    }
+  }
+]

@@ -76,6 +76,8 @@ packages/*
 # JSON files in configs folder
 configs/
 configs/*
+!tests/fixtures/wp-env/themes/wdk-shared-runtime-theme/wdk/configs/
+!tests/fixtures/wp-env/themes/wdk-shared-runtime-theme/wdk/configs/pages.json
 
 # Wordpress Env config file
 *.env
