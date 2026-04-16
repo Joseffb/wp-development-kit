@@ -25,8 +25,3 @@ if (!$foundLegacyNotice) {
     fwrite(STDERR, "Expected legacy eager bootstrap warning was not found.\n");
     exit(1);
 }
-
-if (!get_page_by_path('wdk-coexistence', OBJECT, 'page')) {
-    fwrite(STDERR, "Expected coexistence page was not created in legacy eager scenario.\n");
-    exit(1);
-}

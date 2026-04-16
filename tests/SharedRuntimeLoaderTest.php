@@ -15,6 +15,12 @@ require_once __DIR__ . '/WdkTestCase.php';
  */
 final class SharedRuntimeLoaderTest extends WdkTestCase
 {
+    protected function setUp(): void
+    {
+        self::resetWordPressState();
+        parent::setUp();
+    }
+
     public function testHighestVersionRuntimeWinsAndOnlyWinnerAutoloaderLoads(): void
     {
         unset($GLOBALS['wdk_runtime_autoloaders_loaded']);
