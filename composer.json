@@ -20,6 +20,9 @@
     "psr-4": {
       "WDK\\": "library"
     },
+    "files": [
+      "wdk-runtime-loader.php"
+    ],
     "classmap": [
       "library/Stripe_Rest_API_Provider.php"
     ]

@@ -28,7 +28,7 @@ final class SharedRuntimeLoaderTest extends WdkTestCase
         wdk_register_runtime_candidate([
             'id' => 'core-runtime',
             'bundle_id' => 'wdk-core-plugin',
-            'version' => '0.4.0',
+            'version' => '0.5.0',
             'autoloader' => __DIR__ . '/fixtures/runtime/winner-autoloader.php',
             'root' => dirname(__DIR__),
         ]);
@@ -36,7 +36,7 @@ final class SharedRuntimeLoaderTest extends WdkTestCase
             'id' => 'wdk-core-plugin',
             'type' => 'core-plugin',
             'root' => dirname(__DIR__),
-            'version' => '0.4.0',
+            'version' => '0.5.0',
         ]);
 
         wdk_register_runtime_candidate([
@@ -60,7 +60,7 @@ final class SharedRuntimeLoaderTest extends WdkTestCase
         $info = wdk_runtime_info();
         $this->assertTrue($info['booted']);
         $this->assertSame('core-runtime', $info['selected']['id']);
-        $this->assertSame('0.4.0', $info['selected']['version']);
+        $this->assertSame('0.5.0', $info['selected']['version']);
         $this->assertContains('wdk-core-plugin', $info['bundle_ids']);
         $this->assertContains('wdk-legacy-plugin', $info['bundle_ids']);
         $this->assertGreaterThanOrEqual(1, $info['notice_count']);
@@ -73,7 +73,7 @@ final class SharedRuntimeLoaderTest extends WdkTestCase
         wdk_register_runtime_candidate([
             'id' => 'first-runtime',
             'bundle_id' => 'theme-bundle',
-            'version' => '0.4.0',
+            'version' => '0.5.0',
             'autoloader' => __DIR__ . '/fixtures/runtime/winner-autoloader.php',
             'root' => dirname(__DIR__),
         ]);
@@ -81,13 +81,13 @@ final class SharedRuntimeLoaderTest extends WdkTestCase
             'id' => 'theme-bundle',
             'type' => 'theme',
             'root' => dirname(__DIR__),
-            'version' => '0.4.0',
+            'version' => '0.5.0',
         ]);
 
         wdk_register_runtime_candidate([
             'id' => 'second-runtime',
             'bundle_id' => 'plugin-bundle',
-            'version' => '0.4.0',
+            'version' => '0.5.0',
             'autoloader' => __DIR__ . '/fixtures/runtime/loser-autoloader.php',
             'root' => dirname(__DIR__),
         ]);
@@ -95,7 +95,7 @@ final class SharedRuntimeLoaderTest extends WdkTestCase
             'id' => 'plugin-bundle',
             'type' => 'plugin',
             'root' => dirname(__DIR__),
-            'version' => '0.4.0',
+            'version' => '0.5.0',
         ]);
 
         do_action('after_setup_theme');
@@ -105,23 +105,25 @@ final class SharedRuntimeLoaderTest extends WdkTestCase
         $this->assertSame(['theme-bundle', 'plugin-bundle'], array_slice($info['bundle_ids'], 0, 2));
     }
 
-    public function testLegacySystemStartWarnsWhenRuntimeCandidatesArePending(): void
+    public function testSystemStartInfersAndRegistersBundleFromCaller(): void
     {
-        wdk_register_runtime_candidate([
-            'id' => 'core-runtime',
-            'bundle_id' => 'wdk-core-plugin',
-            'version' => '0.4.0',
-            'autoloader' => __DIR__ . '/fixtures/runtime/winner-autoloader.php',
-            'root' => dirname(__DIR__),
-        ]);
+        $themeRoot = __DIR__ . '/fixtures/wp-env/themes/wdk-shared-runtime-theme';
+        $this->assertFileExists($themeRoot . '/wdk/configs/pages.json');
 
-        $this->assertFalse(\WDK\System::Start());
-        $this->assertNotEmpty($this->deprecations());
-        $this->assertStringContainsString(
-            'shared runtime bootstrap shim',
-            $this->deprecations()[0]['message']
-        );
-        $this->assertGreaterThanOrEqual(1, wdk_runtime_info()['notice_count']);
+        require $themeRoot . '/system-start.php';
+
+        do_action('after_setup_theme');
+        do_action('init');
+
+        $info = wdk_runtime_info();
+        $this->assertTrue($info['booted']);
+        $this->assertContains('wdk-shared-runtime-theme', $info['bundle_ids']);
+        $this->assertSame('theme', $info['bundles'][0]['type']);
+        $this->assertSame('coexistence', get_option('wdk_process_template_page_wdk-coexistence'));
+
+        $page = get_page_by_path('wdk-coexistence', OBJECT, 'page');
+        $this->assertNotNull($page);
+        $this->assertSame('WDK Coexistence', $page->post_title);
     }
 
     public function testLateRegisteredThemeBundleAttachesToBootedRuntimeAndProcessesConfig(): void
@@ -132,7 +134,7 @@ final class SharedRuntimeLoaderTest extends WdkTestCase
         wdk_register_runtime_candidate([
             'id' => 'core-runtime',
             'bundle_id' => 'wdk-core-plugin',
-            'version' => '0.4.0',
+            'version' => '0.5.0',
             'autoloader' => __DIR__ . '/fixtures/runtime/winner-autoloader.php',
             'root' => dirname(__DIR__),
         ]);
@@ -140,7 +142,7 @@ final class SharedRuntimeLoaderTest extends WdkTestCase
             'id' => 'wdk-core-plugin',
             'type' => 'core-plugin',
             'root' => dirname(__DIR__),
-            'version' => '0.4.0',
+            'version' => '0.5.0',
         ]);
 
         do_action('after_setup_theme');
@@ -151,7 +153,7 @@ final class SharedRuntimeLoaderTest extends WdkTestCase
         wdk_register_runtime_candidate([
             'id' => 'theme-runtime',
             'bundle_id' => 'wdk-shared-runtime-theme',
-            'version' => '0.4.0',
+            'version' => '0.5.0',
             'autoloader' => __DIR__ . '/fixtures/runtime/loser-autoloader.php',
             'root' => dirname(__DIR__),
         ]);
@@ -159,10 +161,10 @@ final class SharedRuntimeLoaderTest extends WdkTestCase
             'id' => 'wdk-shared-runtime-theme',
             'type' => 'theme',
             'root' => $themeRoot,
-            'version' => '0.4.0',
+            'version' => '0.5.0',
             'config_paths' => [$themeRoot . '/wdk/configs'],
             'template_paths' => [$themeRoot . '/wdk/views'],
-            'bootstrap_file' => $themeRoot . '/bundle-bootstrap.php',
+            'bootstrap_file' => $themeRoot . '/wdk/bootstrap.php',
         ]);
 
         do_action('init');

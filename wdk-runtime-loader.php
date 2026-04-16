@@ -60,6 +60,256 @@ if (!function_exists('wdk_runtime_normalize_paths')) {
     }
 }
 
+if (!function_exists('wdk_runtime_slugify')) {
+    function wdk_runtime_slugify(string $value): string
+    {
+        $value = strtolower(trim($value));
+        $value = (string) preg_replace('/[^a-z0-9]+/', '-', $value);
+        $value = trim($value, '-');
+
+        return $value !== '' ? $value : 'wdk-bundle';
+    }
+}
+
+if (!function_exists('wdk_runtime_current_root')) {
+    function wdk_runtime_current_root(): string
+    {
+        return rtrim(dirname(__FILE__), DIRECTORY_SEPARATOR);
+    }
+}
+
+if (!function_exists('wdk_runtime_current_version')) {
+    function wdk_runtime_current_version(): string
+    {
+        static $version = null;
+        if (is_string($version)) {
+            return $version;
+        }
+
+        if (defined('WDK_VERSION')) {
+            $version = ltrim((string) WDK_VERSION, 'v');
+            return $version;
+        }
+
+        $packageJson = wdk_runtime_current_root() . '/package.json';
+        if (is_file($packageJson)) {
+            $payload = json_decode((string) file_get_contents($packageJson), true);
+            $candidate = $payload['version'] ?? null;
+            if (is_string($candidate) && $candidate !== '') {
+                $version = ltrim($candidate, 'v');
+                return $version;
+            }
+        }
+
+        $version = '0.0.0';
+        return $version;
+    }
+}
+
+if (!function_exists('wdk_runtime_infer_caller_file')) {
+    function wdk_runtime_infer_caller_file(?array $trace = null): string
+    {
+        $runtimeRoot = rtrim((string) (realpath(wdk_runtime_current_root()) ?: wdk_runtime_current_root()), DIRECTORY_SEPARATOR);
+        $libraryPath = $runtimeRoot . DIRECTORY_SEPARATOR . 'library' . DIRECTORY_SEPARATOR;
+        $vendorSegment = DIRECTORY_SEPARATOR . 'vendor' . DIRECTORY_SEPARATOR;
+
+        foreach (array_reverse(get_included_files()) as $includedFile) {
+            if (!is_string($includedFile) || $includedFile === '' || !file_exists($includedFile)) {
+                continue;
+            }
+
+            $resolved = (string) (realpath($includedFile) ?: $includedFile);
+            if ($resolved === __FILE__) {
+                continue;
+            }
+
+            if (str_contains($resolved, $vendorSegment) || str_starts_with($resolved, $libraryPath)) {
+                continue;
+            }
+
+            return $resolved;
+        }
+
+        $trace = $trace ?? debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS);
+        foreach ($trace as $frame) {
+            $file = $frame['file'] ?? null;
+            if (!is_string($file) || $file === '' || $file === 'Command line code') {
+                continue;
+            }
+
+            $resolved = (string) (realpath($file) ?: $file);
+            if ($resolved === __FILE__ || str_starts_with($resolved, $libraryPath)) {
+                continue;
+            }
+
+            return $resolved;
+        }
+
+        return $runtimeRoot;
+    }
+}
+
+if (!function_exists('wdk_runtime_infer_bundle_root')) {
+    function wdk_runtime_infer_bundle_root(string $callerFile): string
+    {
+        $directory = is_dir($callerFile) ? $callerFile : dirname($callerFile);
+        $directory = rtrim($directory, DIRECTORY_SEPARATOR);
+
+        if (basename($directory) === 'wdk') {
+            return dirname($directory);
+        }
+
+        $candidates = array_values(array_unique([
+            $directory,
+            dirname($directory),
+            dirname(dirname($directory)),
+        ]));
+
+        foreach ($candidates as $candidate) {
+            $candidate = rtrim($candidate, DIRECTORY_SEPARATOR);
+            if ($candidate === '' || $candidate === DIRECTORY_SEPARATOR) {
+                continue;
+            }
+
+            if (
+                is_dir($candidate . '/wdk/configs')
+                || is_dir($candidate . '/wdk/views')
+                || is_file($candidate . '/wdk/bootstrap.php')
+                || is_file($candidate . '/vendor/autoload.php')
+                || (is_file($candidate . '/style.css') && is_file($candidate . '/functions.php'))
+                || is_file($candidate . '/' . basename($candidate) . '.php')
+            ) {
+                return $candidate;
+            }
+        }
+
+        return $directory;
+    }
+}
+
+if (!function_exists('wdk_runtime_detect_bundle_type')) {
+    function wdk_runtime_detect_bundle_type(string $bundleRoot): string
+    {
+        $bundleRealPath = realpath($bundleRoot) ?: $bundleRoot;
+        $stylesheetRoot = function_exists('get_stylesheet_directory') ? realpath((string) get_stylesheet_directory()) : false;
+        $templateRoot = function_exists('get_template_directory') ? realpath((string) get_template_directory()) : false;
+
+        if (
+            ($stylesheetRoot && $bundleRealPath === $stylesheetRoot)
+            || ($templateRoot && $bundleRealPath === $templateRoot)
+            || (is_file($bundleRoot . '/style.css') && is_file($bundleRoot . '/functions.php'))
+        ) {
+            return 'theme';
+        }
+
+        if (is_file($bundleRoot . '/wp-developer-kit.php')) {
+            return 'core-plugin';
+        }
+
+        return 'plugin';
+    }
+}
+
+if (!function_exists('wdk_runtime_discover_candidate')) {
+    function wdk_runtime_discover_candidate(string $bundleRoot): array
+    {
+        $currentRoot = wdk_runtime_current_root();
+        $candidate = [
+            'root' => $currentRoot,
+            'autoloader' => $currentRoot . '/vendor/autoload.php',
+            'version' => wdk_runtime_current_version(),
+        ];
+
+        $installedPhp = $bundleRoot . '/vendor/composer/installed.php';
+        if (!is_file($installedPhp)) {
+            return $candidate;
+        }
+
+        $installed = include $installedPhp;
+        if (!is_array($installed)) {
+            return $candidate;
+        }
+
+        $package = $installed['versions']['joseffb/wp-developer-kit'] ?? null;
+        if (!is_array($package)) {
+            return $candidate;
+        }
+
+        $installPath = $package['install_path'] ?? null;
+        if (is_string($installPath) && $installPath !== '') {
+            $candidate['root'] = rtrim((string) (realpath($installPath) ?: $installPath), DIRECTORY_SEPARATOR);
+            $candidate['autoloader'] = $bundleRoot . '/vendor/autoload.php';
+        }
+
+        $version = $package['pretty_version'] ?? $package['version'] ?? $candidate['version'];
+        if (is_string($version) && $version !== '') {
+            $candidate['version'] = ltrim($version, 'v');
+        }
+
+        return $candidate;
+    }
+}
+
+if (!function_exists('wdk_runtime_infer_bundle_definition')) {
+    function wdk_runtime_infer_bundle_definition(string $callerFile, array $overrides = [], array $locations = []): array
+    {
+        $bundleRoot = rtrim((string) ($overrides['root'] ?? wdk_runtime_infer_bundle_root($callerFile)), DIRECTORY_SEPARATOR);
+        $candidateDefaults = wdk_runtime_discover_candidate($bundleRoot);
+        $bundleType = (string) ($overrides['type'] ?? wdk_runtime_detect_bundle_type($bundleRoot));
+        $defaultBundleId = $bundleType === 'core-plugin'
+            ? 'wdk-core-plugin'
+            : wdk_runtime_slugify(basename($bundleRoot));
+        $bundleId = (string) ($overrides['id'] ?? $overrides['bundle_id'] ?? $defaultBundleId);
+        $bootstrapFile = $overrides['bootstrap_file'] ?? ($bundleRoot . '/wdk/bootstrap.php');
+
+        $bundle = [
+            'id' => $bundleId,
+            'type' => $bundleType,
+            'root' => $bundleRoot,
+            'version' => (string) ($overrides['version'] ?? $candidateDefaults['version']),
+            'config_paths' => $overrides['config_paths']
+                ?? $overrides['config_roots']
+                ?? [
+                    $bundleRoot . '/wdk/configs',
+                    $bundleRoot . '/wdk/config',
+                    $bundleRoot . '/configs',
+                ],
+            'template_paths' => $overrides['template_paths']
+                ?? $overrides['template_roots']
+                ?? ($locations !== [] ? $locations : [
+                    $bundleRoot . '/wdk/views',
+                    $bundleRoot . '/views',
+                ]),
+            'bootstrap_file' => is_string($bootstrapFile) && is_file($bootstrapFile) ? $bootstrapFile : null,
+            'label' => (string) ($overrides['label'] ?? $bundleId),
+        ];
+
+        $candidate = [
+            'id' => (string) (($overrides['runtime_id'] ?? null) ?: ($bundleId . '-runtime')),
+            'bundle_id' => $bundleId,
+            'version' => (string) ($overrides['version'] ?? $candidateDefaults['version']),
+            'autoloader' => (string) ($overrides['autoloader'] ?? $candidateDefaults['autoloader']),
+            'root' => (string) ($overrides['runtime_root'] ?? $candidateDefaults['root']),
+            'label' => (string) ($overrides['runtime_label'] ?? ($bundleId . '-runtime')),
+        ];
+
+        return [
+            'candidate' => $candidate,
+            'bundle' => $bundle,
+        ];
+    }
+}
+
+if (!function_exists('wdk_register_inferred_runtime_bundle')) {
+    function wdk_register_inferred_runtime_bundle(string $callerFile, array $overrides = [], array $locations = []): array
+    {
+        $definition = wdk_runtime_infer_bundle_definition($callerFile, $overrides, $locations);
+        wdk_register_runtime_bundle($definition['candidate'], $definition['bundle']);
+
+        return $definition;
+    }
+}
+
 if (!function_exists('wdk_normalize_runtime_candidate')) {
     function wdk_normalize_runtime_candidate(array $candidate): array
     {

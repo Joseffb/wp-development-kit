@@ -99,7 +99,7 @@ same_version_scenario() {
   require_output "${html}" "THEME=theme-template-active"
   require_output "${html}" "ALPHA=alpha-ok"
   require_output "${html}" "SECONDARY=beta-ok"
-  require_output "${html}" "VERSION=0.4.0"
+  require_output "${html}" "VERSION=0.5.0"
 }
 
 mixed_version_scenario() {
@@ -113,7 +113,7 @@ mixed_version_scenario() {
   assert_clean_response "${html}"
   require_output "${html}" "ALPHA=alpha-ok"
   require_output "${html}" "SECONDARY=legacy-ok"
-  require_output "${html}" "VERSION=0.4.0"
+  require_output "${html}" "VERSION=0.5.0"
 }
 
 legacy_eager_scenario() {

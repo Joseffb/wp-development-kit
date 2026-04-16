@@ -16,6 +16,7 @@ class Runtime
     private static bool $booted = false;
     private static array $selected = [];
     private static array $bundles = [];
+    private static array $bootstrappedBundles = [];
 
     public static function boot(array $selectedCandidate, array $bundles): bool
     {
@@ -83,6 +84,7 @@ class Runtime
         self::$booted = false;
         self::$selected = [];
         self::$bundles = [];
+        self::$bootstrappedBundles = [];
         self::syncLoaderState();
     }
 
@@ -138,6 +140,12 @@ class Runtime
     private static function bootstrapBundle(array $bundle): void
     {
         $bootstrapFile = $bundle['bootstrap_file'] ?? null;
+        $bundleId = (string) ($bundle['id'] ?? '');
+
+        if ($bundleId !== '' && isset(self::$bootstrappedBundles[$bundleId])) {
+            return;
+        }
+
         if (!is_string($bootstrapFile) || $bootstrapFile === '') {
             return;
         }
@@ -153,7 +161,11 @@ class Runtime
             return;
         }
 
-        require_once $bootstrapFile;
+        require $bootstrapFile;
+
+        if ($bundleId !== '') {
+            self::$bootstrappedBundles[$bundleId] = true;
+        }
     }
 
     private static function syncLoaderState(): void

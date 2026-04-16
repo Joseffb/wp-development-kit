@@ -10,12 +10,6 @@ Plugin Name: WDK Fixture Alpha
 Version: 1.0.0
 */
 
-require_once WP_PLUGIN_DIR . '/wp-development-kit/tests/fixtures/wp-env/shared-runtime-bootstrap.php';
+require_once WP_PLUGIN_DIR . '/wp-development-kit/vendor/autoload.php';
 
-wdk_fixture_register_bundle(
-    'wdk-fixture-alpha',
-    'plugin',
-    __DIR__,
-    '0.4.0',
-    __DIR__ . '/plugin-bootstrap.php'
-);
+\WDK\System::Start();

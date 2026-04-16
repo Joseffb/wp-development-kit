@@ -1,6 +1,6 @@
 <?php
 /**
- * Fixture theme file used by the shared runtime coexistence suite.
+ * Fixture theme bootstrap used by the shared runtime coexistence suite.
  *
  * @package WDK\Tests
  */

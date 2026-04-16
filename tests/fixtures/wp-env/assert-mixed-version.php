@@ -13,8 +13,8 @@ if (!function_exists('wdk_runtime_info')) {
 
 $info = wdk_runtime_info();
 
-if (($info['selected']['version'] ?? null) !== '0.4.0') {
-    fwrite(STDERR, "Expected runtime version 0.4.0 for mixed-version scenario.\n");
+if (($info['selected']['version'] ?? null) !== '0.5.0') {
+    fwrite(STDERR, "Expected runtime version 0.5.0 for mixed-version scenario.\n");
     exit(1);
 }
 

@@ -1,6 +1,6 @@
 <?php
 /**
- * Fixture plugin file used by the shared runtime coexistence suite.
+ * Fixture plugin bootstrap used by the shared runtime coexistence suite.
  *
  * @package WDK\Tests
  */

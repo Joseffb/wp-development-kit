@@ -16,7 +16,7 @@ if (!function_exists('wdk_fixture_runtime_root')) {
 }
 
 if (!function_exists('wdk_fixture_register_bundle')) {
-    function wdk_fixture_register_bundle(string $bundleId, string $type, string $root, string $version = '0.4.0', ?string $bootstrapFile = null): void
+    function wdk_fixture_register_bundle(string $bundleId, string $type, string $root, string $version = '0.5.0', ?string $bootstrapFile = null): void
     {
         require_once wdk_fixture_runtime_root() . '/wdk-runtime-loader.php';
 

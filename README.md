@@ -4,7 +4,7 @@ WP Development Kit, or WDK, is a WordPress development library for building cont
 
 ## Breaking Change Notice
 
-WDK `0.4.0` is a stabilization release with compatibility shims.
+WDK `0.5.0` makes `WDK\System::Start()` the default shared-runtime bootstrap path and keeps the stabilization compatibility shims in place.
 
 Unavoidable breaking changes:
 
@@ -13,7 +13,7 @@ Unavoidable breaking changes:
 - Raw card-number / PAN / CVV server-side payloads are rejected.
 - The repo now tracks Composer, PHPUnit, CI, and local wp-env tooling as part of the supported developer contract.
 
-Compatibility shims included in `0.4.0`:
+Compatibility shims included in `0.5.0`:
 
 - Legacy short provider names such as `PayPal_Rest_API_Provider` and `WP_Local_Search_Provider` still work.
 - Deprecated provider-constructor argument patterns are still normalized where they can be adapted safely.
@@ -66,27 +66,12 @@ WDK\System::Start();
 
 ### Shared runtime bootstrap for themes and plugins
 
-If a WDK-based theme/template and one or more WDK-based plugins can be active in the same request, do not call `WDK\System::Start()` eagerly at file scope.
-
-Instead, include the runtime loader and register the bundle:
+If a WDK-based theme/template and one or more WDK-based plugins can be active in the same request, the normal bootstrap is still:
 
 ```php
-require_once __DIR__ . '/vendor/joseffb/wp-development-kit/wdk-runtime-loader.php';
+require_once __DIR__ . '/vendor/autoload.php';
 
-wdk_register_runtime_bundle([
-    'id' => 'my-bundle-runtime',
-    'bundle_id' => 'my-bundle',
-    'version' => '0.4.0',
-    'autoloader' => __DIR__ . '/vendor/autoload.php',
-    'root' => __DIR__,
-], [
-    'id' => 'my-bundle',
-    'type' => 'plugin',
-    'root' => __DIR__,
-    'config_paths' => [__DIR__ . '/wdk/configs'],
-    'template_paths' => [__DIR__ . '/wdk/views'],
-    'bootstrap_file' => __DIR__ . '/wdk/bootstrap.php',
-]);
+WDK\System::Start();
 ```
 
 WDK now supports one shared runtime per request:
@@ -94,7 +79,28 @@ WDK now supports one shared runtime per request:
 - highest version wins
 - equal-version tie goes to the first registered runtime
 - older bundles attach to the winner and rely on compatibility shims
-- eager `System::Start()` in a multi-bundle request is deprecated and warned
+- `System::Start()` infers the bundle root, bundle type, standard `wdk/configs` and `wdk/views` paths, and optional `wdk/bootstrap.php`
+
+Use `wdk_register_runtime_bundle()` only when a bundle has non-standard paths or you need explicit runtime control:
+
+```php
+require_once __DIR__ . '/vendor/autoload.php';
+
+wdk_register_runtime_bundle([
+    'id' => 'my-bundle-runtime',
+    'bundle_id' => 'my-bundle',
+    'version' => '0.5.0',
+    'autoloader' => __DIR__ . '/vendor/autoload.php',
+    'root' => __DIR__,
+], [
+    'id' => 'my-bundle',
+    'type' => 'plugin',
+    'root' => __DIR__,
+    'config_paths' => [__DIR__ . '/custom/config'],
+    'template_paths' => [__DIR__ . '/custom/views'],
+    'bootstrap_file' => __DIR__ . '/custom/bootstrap.php',
+]);
+```
 
 ## Project Layout
 
@@ -103,6 +109,7 @@ By default WDK looks for configuration and view files in:
 ```text
 project-root/
 └── wdk/
+    ├── bootstrap.php
     ├── configs/
     └── views/
 ```
@@ -149,7 +156,7 @@ add_filter('wdk_context_templatename', function ($context) {
 
 ## Compatibility Shims
 
-`0.4.0` keeps older integrations moving where it is safe to do so.
+`0.5.0` keeps older integrations moving where it is safe to do so.
 
 ### Search providers
 
@@ -376,7 +383,7 @@ $payment = WDK\Payments::create_payment([
 ], ['api-login-id', 'transaction-key'], WDK\AuthorizeNet_Rest_API_Provider::class);
 ```
 
-## Validation Status For 0.4.0
+## Validation Status For 0.5.0
 
 This repository now ships with:
 

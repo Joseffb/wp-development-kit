@@ -18,33 +18,25 @@ use RuntimeException;
 class System
 {
     /**
-     * Called from a theme or plugin's functions file to start the framework.
+     * Start WDK for the calling theme or plugin.
      *
+     * When the shared runtime loader is available, WDK infers the bundle root,
+     * bundle type, standard config and template directories, and optional
+     * `wdk/bootstrap.php` file from the caller and registers that bundle with
+     * the shared runtime automatically.
      */
     public static function Start(array $locations = []): bool
     {
-        if (function_exists('wdk_runtime_info')) {
-            $runtimeInfo = wdk_runtime_info();
-            if (!empty($runtimeInfo['candidates']) && empty($runtimeInfo['booted'])) {
-                Compatibility::warn(__METHOD__, 'Calling System::Start() eagerly is unsupported when WDK runtime candidates are already registered. Use the shared runtime bootstrap shim instead.');
-                if (function_exists('wdk_runtime_add_notice')) {
-                    wdk_runtime_add_notice('Legacy WDK eager bootstrap was detected before the shared runtime selected a winner. Use the runtime loader shim for multi-bundle requests.', 'warning');
-                }
-                return false;
-            }
-
-            if (!empty($runtimeInfo['booted']) && count($runtimeInfo['bundles'] ?? []) > 1) {
-                Compatibility::warn(__METHOD__, 'Calling System::Start() after the shared runtime booted is deprecated. Register the bundle with the runtime loader instead.');
-                if (function_exists('wdk_runtime_add_notice')) {
-                    wdk_runtime_add_notice('Legacy WDK eager bootstrap was skipped because the shared runtime already booted this request.', 'warning');
-                }
-                return false;
-            }
-        }
-
-        $trace = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 2);
-        $callerFile = $trace[1]['file'] ?? dirname(__DIR__);
+        $trace = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS);
+        $callerFile = function_exists('wdk_runtime_infer_caller_file')
+            ? wdk_runtime_infer_caller_file($trace)
+            : ($trace[1]['file'] ?? dirname(__DIR__));
         $callPathDir = dirname($callerFile);
+
+        if (function_exists('wdk_register_inferred_runtime_bundle')) {
+            wdk_register_inferred_runtime_bundle($callerFile, [], $locations);
+            return true;
+        }
 
         return self::bootBundles([
             self::legacyBundleDefinition($callPathDir, $locations),

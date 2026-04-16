@@ -18,8 +18,8 @@ if (empty($info['booted'])) {
     exit(1);
 }
 
-if (($info['selected']['version'] ?? null) !== '0.4.0') {
-    fwrite(STDERR, "Expected runtime version 0.4.0.\n");
+if (($info['selected']['version'] ?? null) !== '0.5.0') {
+    fwrite(STDERR, "Expected runtime version 0.5.0.\n");
     exit(1);
 }
 

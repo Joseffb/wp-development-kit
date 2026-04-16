@@ -17,5 +17,5 @@ wdk_fixture_register_bundle(
     'plugin',
     __DIR__,
     '0.2.0',
-    __DIR__ . '/plugin-bootstrap.php'
+    __DIR__ . '/wdk/bootstrap.php'
 );
