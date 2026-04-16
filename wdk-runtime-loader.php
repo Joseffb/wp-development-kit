@@ -187,6 +187,19 @@ if (!function_exists('wdk_register_runtime_candidate')) {
         $state = &wdk_runtime_state();
         $state['candidates'][$candidate['id']] = $candidate;
 
+        if ($state['booted'] && !empty($state['selected']) && ($candidate['id'] !== ($state['selected']['id'] ?? null))) {
+            $selectedVersion = (string) ($state['selected']['version'] ?? '0.0.0');
+            if (version_compare($candidate['version'], $selectedVersion, '>')) {
+                wdk_runtime_add_notice(sprintf(
+                    'WDK runtime candidate "%s" (%s) registered after the shared runtime already selected "%s" (%s). Late higher-version candidates cannot replace a booted runtime.',
+                    $candidate['bundle_id'],
+                    $candidate['version'],
+                    $state['selected']['bundle_id'] ?? $state['selected']['id'] ?? 'unknown-runtime',
+                    $selectedVersion
+                ), 'warning');
+            }
+        }
+
         wdk_runtime_schedule_boot();
         wdk_runtime_maybe_boot_immediately();
 
@@ -200,6 +213,21 @@ if (!function_exists('wdk_register_bundle')) {
         $bundle = wdk_normalize_runtime_bundle($bundle);
         $state = &wdk_runtime_state();
         $state['bundles'][$bundle['id']] = $bundle;
+
+        if ($state['booted'] && class_exists('\\WDK\\Runtime', false)) {
+            try {
+                \WDK\Runtime::attachBundle($bundle);
+                wdk_runtime_sync_info(\WDK\Runtime::info());
+            } catch (\Throwable $throwable) {
+                wdk_runtime_add_notice(sprintf(
+                    'WDK bundle "%s" failed to attach after the shared runtime booted: %s',
+                    $bundle['id'],
+                    $throwable->getMessage()
+                ), 'error');
+            }
+
+            return $bundle;
+        }
 
         wdk_runtime_schedule_boot();
         wdk_runtime_maybe_boot_immediately();
@@ -333,12 +361,17 @@ if (!function_exists('wdk_runtime_info')) {
     function wdk_runtime_info(): array
     {
         $state = wdk_runtime_state();
-        $bundles = array_values($state['bundles']);
+        $runtimeInfo = null;
+        if (!empty($state['booted']) && class_exists('\\WDK\\Runtime', false)) {
+            $runtimeInfo = \WDK\Runtime::info();
+        }
+
+        $bundles = array_values($runtimeInfo['bundles'] ?? $state['bundles']);
         $candidates = array_values($state['candidates']);
 
         return [
-            'booted' => (bool) $state['booted'],
-            'selected' => $state['selected'],
+            'booted' => (bool) ($runtimeInfo['booted'] ?? $state['booted']),
+            'selected' => $runtimeInfo['selected'] ?? $state['selected'],
             'bundles' => $bundles,
             'bundle_ids' => array_values(array_map(static fn (array $bundle): string => (string) ($bundle['id'] ?? ''), $bundles)),
             'candidates' => $candidates,

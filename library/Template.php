@@ -16,6 +16,8 @@ use Twig\TwigFunction;
 class Template
 {
     private static $ext = ".twig";
+    private static bool $timber_hooks_registered = false;
+    private static bool $missing_timber_notice_registered = false;
     private static $templates = [
         'is_embed' => 'embed',
         'is_attachment' => 'attachment',
@@ -202,6 +204,10 @@ class Template
     {
         TimberBridge::set_locations($locations);
         if (TimberBridge::is_available()) {
+            if (self::$timber_hooks_registered) {
+                return;
+            }
+
             add_filter('timber/context', static function () {
                 $show_templates = self::get_config_value('wdk_debug_show_templates');
                 if (defined('WP_DEBUG') && WP_DEBUG) Utility::Log('inside context hook');
@@ -277,7 +283,12 @@ class Template
                 }
                 return $twig;
             });
+            self::$timber_hooks_registered = true;
         } else {
+            if (self::$missing_timber_notice_registered) {
+                return;
+            }
+
             add_action('admin_notices', function () {
                 ?>
                 <div class="notice notice-error is-dismissible">
@@ -285,7 +296,17 @@ class Template
                 </div>
                 <?php
             });
+            self::$missing_timber_notice_registered = true;
         }
+    }
+
+    /**
+     * Reset static setup guards for tests and isolated runtimes.
+     */
+    public static function resetForTests(): void
+    {
+        self::$timber_hooks_registered = false;
+        self::$missing_timber_notice_registered = false;
     }
 
     private static function handle_single($post, mixed $template, $base = 'single'): array

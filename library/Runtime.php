@@ -34,6 +34,40 @@ class Runtime
         return self::$booted;
     }
 
+    /**
+     * Attach a newly registered bundle after the shared runtime has already booted.
+     */
+    public static function attachBundle(array $bundle): bool
+    {
+        if (!self::$booted) {
+            return false;
+        }
+
+        $previousBundles = self::$bundles;
+        self::$bundles = self::upsertBundle(self::$bundles, $bundle);
+        $attachedBundle = self::findBundle((string) ($bundle['id'] ?? ''));
+
+        if ($attachedBundle === null) {
+            self::$bundles = $previousBundles;
+            self::syncLoaderState();
+
+            return false;
+        }
+
+        self::bootstrapBundle($attachedBundle);
+
+        if (!System::attachBundle($attachedBundle, self::$bundles, self::$selected)) {
+            self::$bundles = $previousBundles;
+            self::syncLoaderState();
+
+            return false;
+        }
+
+        self::syncLoaderState();
+
+        return true;
+    }
+
     public static function info(): array
     {
         return [
@@ -74,27 +108,52 @@ class Runtime
         return $bundles;
     }
 
+    private static function upsertBundle(array $bundles, array $bundle): array
+    {
+        $bundleId = (string) ($bundle['id'] ?? '');
+        $filtered = array_values(array_filter($bundles, static fn (array $existing): bool => (string) ($existing['id'] ?? '') !== $bundleId));
+        $filtered[] = $bundle;
+
+        return self::sortBundles($filtered);
+    }
+
+    private static function findBundle(string $bundleId): ?array
+    {
+        foreach (self::$bundles as $bundle) {
+            if ((string) ($bundle['id'] ?? '') === $bundleId) {
+                return $bundle;
+            }
+        }
+
+        return null;
+    }
+
     private static function bootstrapBundles(): void
     {
         foreach (self::$bundles as $bundle) {
-            $bootstrapFile = $bundle['bootstrap_file'] ?? null;
-            if (!is_string($bootstrapFile) || $bootstrapFile === '') {
-                continue;
-            }
-
-            if (!file_exists($bootstrapFile)) {
-                if (function_exists('wdk_runtime_add_notice')) {
-                    wdk_runtime_add_notice(sprintf(
-                        'WDK bundle "%s" declared a bootstrap file that does not exist: %s',
-                        $bundle['id'] ?? 'unknown-bundle',
-                        $bootstrapFile
-                    ), 'warning');
-                }
-                continue;
-            }
-
-            require_once $bootstrapFile;
+            self::bootstrapBundle($bundle);
         }
+    }
+
+    private static function bootstrapBundle(array $bundle): void
+    {
+        $bootstrapFile = $bundle['bootstrap_file'] ?? null;
+        if (!is_string($bootstrapFile) || $bootstrapFile === '') {
+            return;
+        }
+
+        if (!file_exists($bootstrapFile)) {
+            if (function_exists('wdk_runtime_add_notice')) {
+                wdk_runtime_add_notice(sprintf(
+                    'WDK bundle "%s" declared a bootstrap file that does not exist: %s',
+                    $bundle['id'] ?? 'unknown-bundle',
+                    $bootstrapFile
+                ), 'warning');
+            }
+            return;
+        }
+
+        require_once $bootstrapFile;
     }
 
     private static function syncLoaderState(): void

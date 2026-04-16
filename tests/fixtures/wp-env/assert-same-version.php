@@ -36,3 +36,14 @@ foreach ($expectedBundles as $bundleId) {
         exit(1);
     }
 }
+
+$page = get_page_by_path('wdk-coexistence', OBJECT, 'page');
+if (!$page) {
+    fwrite(STDERR, "Expected coexistence page was not created.\n");
+    exit(1);
+}
+
+if (get_option('wdk_process_template_page_wdk-coexistence') !== 'coexistence') {
+    fwrite(STDERR, "Theme bootstrap options were not applied.\n");
+    exit(1);
+}

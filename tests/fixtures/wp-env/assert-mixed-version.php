@@ -36,3 +36,8 @@ if (!$foundMixedVersionNotice) {
     fwrite(STDERR, "Expected mixed-version downgrade notice was not found.\n");
     exit(1);
 }
+
+if (!get_page_by_path('wdk-coexistence', OBJECT, 'page')) {
+    fwrite(STDERR, "Expected coexistence page was not created in mixed-version scenario.\n");
+    exit(1);
+}

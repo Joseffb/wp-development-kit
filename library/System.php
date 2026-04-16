@@ -88,6 +88,38 @@ class System
     }
 
     /**
+     * Attach a newly registered bundle to an already booted shared runtime.
+     */
+    public static function attachBundle(array $bundle, array $bundles, array $runtime = []): bool
+    {
+        try {
+            self::validateBundleConfigs($bundles);
+
+            foreach (($bundle['config_paths'] ?? []) as $configPath) {
+                if (is_string($configPath) && is_dir($configPath)) {
+                    self::Setup($configPath);
+                }
+            }
+
+            Template::Setup(self::templateLocationsForBundles($bundles, $runtime));
+
+            return true;
+        } catch (\Throwable $throwable) {
+            Utility::Log('JSON ERROR, Please validate config files.');
+            Utility::Log($throwable);
+            if (function_exists('wdk_runtime_add_notice')) {
+                wdk_runtime_add_notice(sprintf(
+                    'WDK bundle "%s" could not attach to the shared runtime: %s',
+                    $bundle['id'] ?? 'unknown-bundle',
+                    $throwable->getMessage()
+                ), 'error');
+            }
+
+            return false;
+        }
+    }
+
+    /**
      * Install command for the customizations in the config files.
      *
      * @param null $dir

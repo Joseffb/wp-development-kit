@@ -117,4 +117,56 @@ final class SharedRuntimeLoaderTest extends WdkTestCase
         );
         $this->assertGreaterThanOrEqual(1, wdk_runtime_info()['notice_count']);
     }
+
+    public function testLateRegisteredThemeBundleAttachesToBootedRuntimeAndProcessesConfig(): void
+    {
+        $themeRoot = __DIR__ . '/fixtures/wp-env/themes/wdk-shared-runtime-theme';
+
+        wdk_register_runtime_candidate([
+            'id' => 'core-runtime',
+            'bundle_id' => 'wdk-core-plugin',
+            'version' => '0.4.0',
+            'autoloader' => __DIR__ . '/fixtures/runtime/winner-autoloader.php',
+            'root' => dirname(__DIR__),
+        ]);
+        wdk_register_bundle([
+            'id' => 'wdk-core-plugin',
+            'type' => 'core-plugin',
+            'root' => dirname(__DIR__),
+            'version' => '0.4.0',
+        ]);
+
+        do_action('after_setup_theme');
+
+        $this->assertTrue(wdk_runtime_info()['booted']);
+        $this->assertNull(get_page_by_path('wdk-coexistence', OBJECT, 'page'));
+
+        wdk_register_runtime_candidate([
+            'id' => 'theme-runtime',
+            'bundle_id' => 'wdk-shared-runtime-theme',
+            'version' => '0.4.0',
+            'autoloader' => __DIR__ . '/fixtures/runtime/loser-autoloader.php',
+            'root' => dirname(__DIR__),
+        ]);
+        wdk_register_bundle([
+            'id' => 'wdk-shared-runtime-theme',
+            'type' => 'theme',
+            'root' => $themeRoot,
+            'version' => '0.4.0',
+            'config_paths' => [$themeRoot . '/wdk/configs'],
+            'template_paths' => [$themeRoot . '/wdk/views'],
+            'bootstrap_file' => $themeRoot . '/bundle-bootstrap.php',
+        ]);
+
+        do_action('init');
+
+        $info = wdk_runtime_info();
+        $this->assertContains('wdk-shared-runtime-theme', $info['bundle_ids']);
+        $this->assertSame('coexistence', get_option('wdk_process_template_page_wdk-coexistence'));
+
+        $page = get_page_by_path('wdk-coexistence', OBJECT, 'page');
+        $this->assertNotNull($page);
+        $this->assertSame('page', $page->post_type);
+        $this->assertSame('WDK Coexistence', $page->post_title);
+    }
 }

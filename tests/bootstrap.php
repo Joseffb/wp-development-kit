@@ -121,6 +121,10 @@ function wdk_test_clear_runtime_state(): void
     if (class_exists('\WDK\Runtime', false)) {
         \WDK\Runtime::resetForTests();
     }
+
+    if (class_exists('\WDK\Template', false)) {
+        \WDK\Template::resetForTests();
+    }
 }
 
 function wdk_test_create_nonce(string $action): string
